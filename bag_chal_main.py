@@ -2,8 +2,11 @@ import pygame
 import numpy as np
 import random
 
+"""list of all available moves"""
 grid_matrix = [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2], [2, 0], [2, 1], [2, 2]]
+"""places that are currently holding a tiger or a sheep"""
 taken_spots = np.zeros((3, 3))
+"""lists of goats and their respective coordianates"""
 goat_coord = []
 goats = []
 
@@ -21,20 +24,27 @@ class TIGER:
     def return_position(self):
         return self.pos_x, self.pos_y
 
+    """this function checks whether the tiger move is legal and amkes the move. works for both normal moves and eating """
+
     def move(self, dx, dy, mission):
         if mission == "move":
+            """numbers can't be bigger than 1 in each direction"""
             constraint_1 = abs(int(dx) * int(dy)) == 1
             constraint_2 = abs(int(dx) * int(dy)) == 0
+            """numbers can't be bigger than 2 in each direction"""
         elif mission == "eat":
             constraint_1 = abs(int(dx) * int(dy)) == 4
             constraint_2 = abs(int(dx) * int(dy)) == 0
         if constraint_1 or constraint_2:
+            """check whether the move is inside the grid"""
             if [self.pos_x + dx, self.pos_y + dy] not in grid_matrix:
                 return None
             else:
+                """check that the spot we want to move to is free"""
                 if taken_spots[self.pos_x + dx, self.pos_y + dy] != 0:
                     return None
                 else:
+                    """execute the move"""
                     taken_spots[self.pos_x, self.pos_y] = 0
                     self.pos_x += dx
                     self.pos_y += dy
@@ -42,6 +52,9 @@ class TIGER:
         else:
             return None
         return self.pos_x, self.pos_y
+
+    """check if there are any goats nearby and, if yes,
+     specify the direction in which we want the tiger to jump in order to eat the goat"""
 
     def scan_for_food(self):
         attack_direction = []
@@ -51,6 +64,11 @@ class TIGER:
                 vector = 2 * (goat_x - self.pos_x), 2 * (goat_y - self.pos_y)
                 attack_direction.append(vector)
         return attack_direction
+
+    """state all the moves the tiger can move to.
+   the square the tiger is currently at in 1,
+    unreachable squares are 0 and the possible squares are random between 0 and 1.
+    This function has no use for now"""
 
     def probabilities_matrix(self):
         self.probability_matrix[self.pos_x, self.pos_y] = 1
@@ -71,6 +89,9 @@ class TIGER:
         if [self.pos_x - 1, self.pos_y + 1] in grid_matrix and taken_spots[self.pos_x - 1, self.pos_y + 1] == 0:
             self.probability_matrix[self.pos_x - 1, self.pos_y + 1] = random.random()
         return self.probability_matrix
+
+
+"""Goat class is identical to tiger in lots of aspects, just simpler"""
 
 
 class GOAT:
@@ -100,6 +121,9 @@ class GOAT:
         return self.pos_x, self.pos_y
 
 
+"""Check for food and eat if possible. """
+
+
 def eat(tiger):
     direction = tiger.scan_for_food()
     for vector in direction:
@@ -109,6 +133,9 @@ def eat(tiger):
             goat_x, goat_y = goat_coord[direction.index(vector)]
             taken_spots[goat_x, goat_y] = 0
         break
+
+
+"""Place a tiger on the board, place a goat. The tiger will try to eat the goat if possible"""
 
 
 def main():
