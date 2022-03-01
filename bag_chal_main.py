@@ -1,30 +1,27 @@
-import pygame
 import numpy as np
 import random
 
 """list of all available moves"""
 grid_matrix = [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2], [2, 0], [2, 1], [2, 2]]
 """places that are currently holding a tiger or a sheep"""
-taken_spots = np.zeros((3, 3))
-"""lists of goats and their respective coordianates"""
-goat_coord = []
+board = np.zeros((3, 3))
+"""lists of goats and their respective coordinates"""
 goats = []
+goat_coord = []
 
-
-# avilable_moves = [[0, 1], [1, 0], [0, -1], [-1, 0], [1, 1], [1, -1], [-1, 1], [-1, -1]]
+#def probability_matrix_calculation(x,y):
 
 
 class TIGER:
     def __init__(self, init_x, init_y):
         self.pos_x = init_x
         self.pos_y = init_y
-        taken_spots[self.pos_x, self.pos_y] = 1
-        self.probability_matrix = np.zeros((3, 3))
+        board[self.pos_x, self.pos_y] = 1
 
     def return_position(self):
         return self.pos_x, self.pos_y
 
-    """this function checks whether the tiger move is legal and amkes the move. works for both normal moves and eating """
+    """this function checks whether the tiger move is legal and makes the move. works for both normal moves and eating """
 
     def move(self, dx, dy, mission):
         if mission == "move":
@@ -41,14 +38,14 @@ class TIGER:
                 return None
             else:
                 """check that the spot we want to move to is free"""
-                if taken_spots[self.pos_x + dx, self.pos_y + dy] != 0:
+                if board[self.pos_x + dx, self.pos_y + dy] != 0:
                     return None
                 else:
                     """execute the move"""
-                    taken_spots[self.pos_x, self.pos_y] = 0
+                    board[self.pos_x, self.pos_y] = 0
                     self.pos_x += dx
                     self.pos_y += dy
-                    taken_spots[self.pos_x, self.pos_y] = 1
+                    board[self.pos_x, self.pos_y] = 1
         else:
             return None
         return self.pos_x, self.pos_y
@@ -57,37 +54,43 @@ class TIGER:
      specify the direction in which we want the tiger to jump in order to eat the goat"""
 
     def scan_for_food(self):
-        attack_direction = []
+        attack_directions = []
         for goat in goat_coord:
             goat_x, goat_y = goat
             if abs(self.pos_x - goat_x) <= 1 and abs(self.pos_y - goat_y) <= 1:
                 vector = 2 * (goat_x - self.pos_x), 2 * (goat_y - self.pos_y)
-                attack_direction.append(vector)
-        return attack_direction
+                attack_directions.append(vector)
+        return attack_directions
 
     """state all the moves the tiger can move to.
-   the square the tiger is currently at in 1,
+   the square the tiger is currently at in -1,
     unreachable squares are 0 and the possible squares are random between 0 and 1.
-    This function has no use for now"""
+    T"""
 
     def probabilities_matrix(self):
-        self.probability_matrix[self.pos_x, self.pos_y] = 1
-        if [self.pos_x + 1, self.pos_y + 1] in grid_matrix and taken_spots[self.pos_x + 1, self.pos_y + 1] == 0:
+        self.probability_matrix = np.zeros((3, 3))
+        self.probability_matrix[self.pos_x, self.pos_y] = -1
+        if [self.pos_x + 1, self.pos_y + 1] in grid_matrix and board[self.pos_x + 1, self.pos_y + 1] == 0:
             self.probability_matrix[self.pos_x + 1, self.pos_y + 1] = random.random()
-        if [self.pos_x - 1, self.pos_y - 1] in grid_matrix and taken_spots[self.pos_x - 1, self.pos_y - 1] == 0:
+        if [self.pos_x - 1, self.pos_y - 1] in grid_matrix and board[self.pos_x - 1, self.pos_y - 1] == 0:
             self.probability_matrix[self.pos_x - 1, self.pos_y - 1] = random.random()
-        if [self.pos_x, self.pos_y + 1] in grid_matrix and taken_spots[self.pos_x, self.pos_y + 1] == 0:
+        if [self.pos_x, self.pos_y + 1] in grid_matrix and board[self.pos_x, self.pos_y + 1] == 0:
             self.probability_matrix[self.pos_x, self.pos_y + 1] = random.random()
-        if [self.pos_x + 1, self.pos_y] in grid_matrix and taken_spots[self.pos_x + 1, self.pos_y] == 0:
+        if [self.pos_x + 1, self.pos_y] in grid_matrix and board[self.pos_x + 1, self.pos_y] == 0:
             self.probability_matrix[self.pos_x + 1, self.pos_y] = random.random()
-        if [self.pos_x, self.pos_y - 1] in grid_matrix and taken_spots[self.pos_x, self.pos_y - 1] == 0:
+        if [self.pos_x, self.pos_y - 1] in grid_matrix and board[self.pos_x, self.pos_y - 1] == 0:
             self.probability_matrix[self.pos_x, self.pos_y - 1] = random.random()
-        if [self.pos_x - 1, self.pos_y] in grid_matrix and taken_spots[self.pos_x - 1, self.pos_y] == 0:
+        if [self.pos_x - 1, self.pos_y] in grid_matrix and board[self.pos_x - 1, self.pos_y] == 0:
             self.probability_matrix[self.pos_x - 1, self.pos_y] = random.random()
-        if [self.pos_x + 1, self.pos_y - 1] in grid_matrix and taken_spots[self.pos_x + 1, self.pos_y - 1] == 0:
+        if [self.pos_x + 1, self.pos_y - 1] in grid_matrix and board[self.pos_x + 1, self.pos_y - 1] == 0:
             self.probability_matrix[self.pos_x + 1, self.pos_y - 1] = random.random()
-        if [self.pos_x - 1, self.pos_y + 1] in grid_matrix and taken_spots[self.pos_x - 1, self.pos_y + 1] == 0:
+        if [self.pos_x - 1, self.pos_y + 1] in grid_matrix and board[self.pos_x - 1, self.pos_y + 1] == 0:
             self.probability_matrix[self.pos_x - 1, self.pos_y + 1] = random.random()
+        directions = self.scan_for_food()
+        for vector in directions:
+            if [self.pos_x + vector[0], self.pos_y + vector[1]] in grid_matrix and board[self.pos_x + vector[0],
+                                                                                         self.pos_y + vector[1]] == 0:
+                self.probability_matrix[self.pos_x + vector[0], self.pos_y + vector[1]] = random.randrange(1, 3)
         return self.probability_matrix
 
 
@@ -98,56 +101,115 @@ class GOAT:
     def __init__(self, init_x, init_y):
         self.pos_x = init_x
         self.pos_y = init_y
-        if taken_spots[self.pos_x, self.pos_y] == 0:
-            taken_spots[self.pos_x, self.pos_y] = 2
+        if board[self.pos_x, self.pos_y] == 0:
+            board[self.pos_x, self.pos_y] = 2
 
     def return_position(self):
         return self.pos_x, self.pos_y
+
+    def probabilities_matrix(self):
+        self.probability_matrix = np.zeros((3, 3))
+        self.probability_matrix[self.pos_x, self.pos_y] = -1
+        if [self.pos_x + 1, self.pos_y + 1] in grid_matrix and board[self.pos_x + 1, self.pos_y + 1] == 0:
+            self.probability_matrix[self.pos_x + 1, self.pos_y + 1] = random.random()
+        if [self.pos_x - 1, self.pos_y - 1] in grid_matrix and board[self.pos_x - 1, self.pos_y - 1] == 0:
+            self.probability_matrix[self.pos_x - 1, self.pos_y - 1] = random.random()
+        if [self.pos_x, self.pos_y + 1] in grid_matrix and board[self.pos_x, self.pos_y + 1] == 0:
+            self.probability_matrix[self.pos_x, self.pos_y + 1] = random.random()
+        if [self.pos_x + 1, self.pos_y] in grid_matrix and board[self.pos_x + 1, self.pos_y] == 0:
+            self.probability_matrix[self.pos_x + 1, self.pos_y] = random.random()
+        if [self.pos_x, self.pos_y - 1] in grid_matrix and board[self.pos_x, self.pos_y - 1] == 0:
+            self.probability_matrix[self.pos_x, self.pos_y - 1] = random.random()
+        if [self.pos_x - 1, self.pos_y] in grid_matrix and board[self.pos_x - 1, self.pos_y] == 0:
+            self.probability_matrix[self.pos_x - 1, self.pos_y] = random.random()
+        if [self.pos_x + 1, self.pos_y - 1] in grid_matrix and board[self.pos_x + 1, self.pos_y - 1] == 0:
+            self.probability_matrix[self.pos_x + 1, self.pos_y - 1] = random.random()
+        if [self.pos_x - 1, self.pos_y + 1] in grid_matrix and board[self.pos_x - 1, self.pos_y + 1] == 0:
+            self.probability_matrix[self.pos_x - 1, self.pos_y + 1] = random.random()
+        return self.probability_matrix
 
     def move(self, dx, dy):
         if abs(int(dx) * int(dy)) == 1 or abs(int(dx) * int(dy)) == 0:
             if [self.pos_x + dx, self.pos_y + dy] not in grid_matrix:
                 return None
             else:
-                if taken_spots[self.pos_x + dx, self.pos_y + dy] != 0:
+                if board[self.pos_x + dx, self.pos_y + dy] != 0:
                     return None
                 else:
-                    taken_spots[self.pos_x, self.pos_y] = 0
+                    board[self.pos_x, self.pos_y] = 0
                     self.pos_x += dx
                     self.pos_y += dy
-                    taken_spots[self.pos_x, self.pos_y] = 2
+                    board[self.pos_x, self.pos_y] = 2
         else:
             return None
         return self.pos_x, self.pos_y
 
 
-"""Check for food and eat if possible. """
+def placing_the_goat():
+    placement_matrix = np.zeros((3, 3))
+    for i in range(0, 2):
+        for j in range(0, 2):
+            if board[i, j] == 0:
+                placement_matrix[i, j] = random.random()
+            else:
+                placement_matrix[i, j] = 0
+    highest_value = np.amax(placement_matrix)
+    index_x, index_y = np.where(placement_matrix == highest_value)
+    return index_x[0], index_y[0]
 
 
-def eat(tiger):
-    direction = tiger.scan_for_food()
-    for vector in direction:
-        move = tiger.move(vector[0], vector[1], "eat")
-        if move is not None:
-            del goats[direction.index(vector)]
-            goat_x, goat_y = goat_coord[direction.index(vector)]
-            taken_spots[goat_x, goat_y] = 0
-        break
+class TIGER_AI():
+    def __init__(self, Tiger):
+        self.Tiger = Tiger
+
+    def eat(self, goat_x, goat_y):
+        board[goat_x, goat_y] = 0
+        index = goat_coord.index((goat_x, goat_y))
+        del goat_coord[index]
+        del goats[index]
+
+    def make_a_move(self):
+        possible_moves = self.Tiger.probabilities_matrix()
+        highest_value = np.amax(possible_moves)
+        index_x, index_y = np.where(possible_moves == highest_value)
+        dx, dy = index_x[0] - self.Tiger.return_position()[0], index_y[0] - self.Tiger.return_position()[1]
+        if highest_value < 1:
+            self.Tiger.move(dx, dy, "move")
+        else:
+            self.Tiger.move(dx, dy, "eat")
+            self.eat(self.Tiger.return_position()[0] - int(0.5 * dx), self.Tiger.return_position()[1] - int(0.5 * dy))
 
 
-"""Place a tiger on the board, place a goat. The tiger will try to eat the goat if possible"""
+class GOAT_AI():
+    def __init__(self, max_number_of_goats):
+        self.max_number_of_goats = max_number_of_goats
+        self.number_of_goats_on_the_board = 0
+
+    def where_to_place_a_goat(self):
+        placement_matrix = np.zeros((3, 3))
+        for i in range(0, 2):
+            for j in range(0, 2):
+                if board[i, j] == 0:
+                    placement_matrix[i, j] = random.random()
+                else:
+                    placement_matrix[i, j] = 0
+        highest_value = np.amax(placement_matrix)
+        index_x, index_y = np.where(placement_matrix == highest_value)
+        return index_x[0], index_y[0]
 
 
-def main():
+def run_environment(episodes):
     tiger = TIGER(2, 2)
-    coord_x = int(input("enter goat x coordinates:"))
-    coord_y = int(input("enter goat y coordinates:"))
-    goat1 = GOAT(coord_x, coord_y)
-    print(taken_spots)
-    goat_coord.append(goat1.return_position())
-    goats.append(goat1)
-    eat(tiger)
-    print(taken_spots)
+    episode = 0
+    for episode in range(episodes):
+        tiger_ai = TIGER_AI(tiger)
+        goat_x, goat_y = placing_the_goat()
+        goat = GOAT(goat_x, goat_y)
+        goat_coord.append(goat.return_position())
+        goats.append(goat)
+        print(board)
+        tiger_ai.make_a_move()
+        print(board)
 
 
-main()
+run_environment(5)
