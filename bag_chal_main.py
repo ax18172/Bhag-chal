@@ -9,7 +9,55 @@ board = np.zeros((3, 3))
 goats = []
 goat_coord = []
 
-#def probability_matrix_calculation(x,y):
+
+def probability_matrix_calculation(pos_x, pos_y):
+    probability_matrix = np.zeros((3, 3))
+    probability_matrix[pos_x, pos_y] = -1
+    if [pos_x + 1, pos_y + 1] in grid_matrix and board[pos_x + 1, pos_y + 1] == 0:
+        probability_matrix[pos_x + 1, pos_y + 1] = random.random()
+    if [pos_x - 1, pos_y - 1] in grid_matrix and board[pos_x - 1, pos_y - 1] == 0:
+        probability_matrix[pos_x - 1, pos_y - 1] = random.random()
+    if [pos_x, pos_y + 1] in grid_matrix and board[pos_x, pos_y + 1] == 0:
+        probability_matrix[pos_x, pos_y + 1] = random.random()
+    if [pos_x + 1, pos_y] in grid_matrix and board[pos_x + 1, pos_y] == 0:
+        probability_matrix[pos_x + 1, pos_y] = random.random()
+    if [pos_x, pos_y - 1] in grid_matrix and board[pos_x, pos_y - 1] == 0:
+        probability_matrix[pos_x, pos_y - 1] = random.random()
+    if [pos_x - 1, pos_y] in grid_matrix and board[pos_x - 1, pos_y] == 0:
+        probability_matrix[pos_x - 1, pos_y] = random.random()
+    if [pos_x + 1, pos_y - 1] in grid_matrix and board[pos_x + 1, pos_y - 1] == 0:
+        probability_matrix[pos_x + 1, pos_y - 1] = random.random()
+    if [pos_x - 1, pos_y + 1] in grid_matrix and board[pos_x - 1, pos_y + 1] == 0:
+        probability_matrix[pos_x - 1, pos_y + 1] = random.random()
+    return probability_matrix
+
+
+def move(pos_x, pos_y, dx, dy, mission):
+    if mission == "move":
+        """numbers can't be bigger than 1 in each direction"""
+        constraint_1 = abs(int(dx) * int(dy)) == 1
+        constraint_2 = abs(int(dx) * int(dy)) == 0
+        """numbers can't be bigger than 2 in each direction"""
+    elif mission == "eat":
+        constraint_1 = abs(int(dx) * int(dy)) == 4
+        constraint_2 = abs(int(dx) * int(dy)) == 0
+    if constraint_1 or constraint_2:
+        """check whether the move is inside the grid"""
+        if [pos_x + dx, pos_y + dy] not in grid_matrix:
+            return None
+        else:
+            """check that the spot we want to move to is free"""
+            if board[pos_x + dx, pos_y + dy] != 0:
+                return None
+            else:
+                """execute the move"""
+                board[pos_x, pos_y] = 0
+                pos_x += dx
+                pos_y += dy
+                board[pos_x, pos_y] = 1
+    else:
+        return None
+    return pos_x, pos_y
 
 
 class TIGER:
@@ -23,31 +71,8 @@ class TIGER:
 
     """this function checks whether the tiger move is legal and makes the move. works for both normal moves and eating """
 
-    def move(self, dx, dy, mission):
-        if mission == "move":
-            """numbers can't be bigger than 1 in each direction"""
-            constraint_1 = abs(int(dx) * int(dy)) == 1
-            constraint_2 = abs(int(dx) * int(dy)) == 0
-            """numbers can't be bigger than 2 in each direction"""
-        elif mission == "eat":
-            constraint_1 = abs(int(dx) * int(dy)) == 4
-            constraint_2 = abs(int(dx) * int(dy)) == 0
-        if constraint_1 or constraint_2:
-            """check whether the move is inside the grid"""
-            if [self.pos_x + dx, self.pos_y + dy] not in grid_matrix:
-                return None
-            else:
-                """check that the spot we want to move to is free"""
-                if board[self.pos_x + dx, self.pos_y + dy] != 0:
-                    return None
-                else:
-                    """execute the move"""
-                    board[self.pos_x, self.pos_y] = 0
-                    self.pos_x += dx
-                    self.pos_y += dy
-                    board[self.pos_x, self.pos_y] = 1
-        else:
-            return None
+    def move_tiger(self, dx, dy, mission):
+        self.pos_x, self.pos_y = move(self.pos_x, self.pos_y, dx, dy, mission)
         return self.pos_x, self.pos_y
 
     """check if there are any goats nearby and, if yes,
@@ -68,30 +93,13 @@ class TIGER:
     T"""
 
     def probabilities_matrix(self):
-        self.probability_matrix = np.zeros((3, 3))
-        self.probability_matrix[self.pos_x, self.pos_y] = -1
-        if [self.pos_x + 1, self.pos_y + 1] in grid_matrix and board[self.pos_x + 1, self.pos_y + 1] == 0:
-            self.probability_matrix[self.pos_x + 1, self.pos_y + 1] = random.random()
-        if [self.pos_x - 1, self.pos_y - 1] in grid_matrix and board[self.pos_x - 1, self.pos_y - 1] == 0:
-            self.probability_matrix[self.pos_x - 1, self.pos_y - 1] = random.random()
-        if [self.pos_x, self.pos_y + 1] in grid_matrix and board[self.pos_x, self.pos_y + 1] == 0:
-            self.probability_matrix[self.pos_x, self.pos_y + 1] = random.random()
-        if [self.pos_x + 1, self.pos_y] in grid_matrix and board[self.pos_x + 1, self.pos_y] == 0:
-            self.probability_matrix[self.pos_x + 1, self.pos_y] = random.random()
-        if [self.pos_x, self.pos_y - 1] in grid_matrix and board[self.pos_x, self.pos_y - 1] == 0:
-            self.probability_matrix[self.pos_x, self.pos_y - 1] = random.random()
-        if [self.pos_x - 1, self.pos_y] in grid_matrix and board[self.pos_x - 1, self.pos_y] == 0:
-            self.probability_matrix[self.pos_x - 1, self.pos_y] = random.random()
-        if [self.pos_x + 1, self.pos_y - 1] in grid_matrix and board[self.pos_x + 1, self.pos_y - 1] == 0:
-            self.probability_matrix[self.pos_x + 1, self.pos_y - 1] = random.random()
-        if [self.pos_x - 1, self.pos_y + 1] in grid_matrix and board[self.pos_x - 1, self.pos_y + 1] == 0:
-            self.probability_matrix[self.pos_x - 1, self.pos_y + 1] = random.random()
+        probability_matrix = probability_matrix_calculation(self.pos_x, self.pos_y)
         directions = self.scan_for_food()
         for vector in directions:
             if [self.pos_x + vector[0], self.pos_y + vector[1]] in grid_matrix and board[self.pos_x + vector[0],
                                                                                          self.pos_y + vector[1]] == 0:
-                self.probability_matrix[self.pos_x + vector[0], self.pos_y + vector[1]] = random.randrange(1, 3)
-        return self.probability_matrix
+                probability_matrix[self.pos_x + vector[0], self.pos_y + vector[1]] = random.randrange(1, 3)
+        return probability_matrix
 
 
 """Goat class is identical to tiger in lots of aspects, just simpler"""
@@ -108,40 +116,11 @@ class GOAT:
         return self.pos_x, self.pos_y
 
     def probabilities_matrix(self):
-        self.probability_matrix = np.zeros((3, 3))
-        self.probability_matrix[self.pos_x, self.pos_y] = -1
-        if [self.pos_x + 1, self.pos_y + 1] in grid_matrix and board[self.pos_x + 1, self.pos_y + 1] == 0:
-            self.probability_matrix[self.pos_x + 1, self.pos_y + 1] = random.random()
-        if [self.pos_x - 1, self.pos_y - 1] in grid_matrix and board[self.pos_x - 1, self.pos_y - 1] == 0:
-            self.probability_matrix[self.pos_x - 1, self.pos_y - 1] = random.random()
-        if [self.pos_x, self.pos_y + 1] in grid_matrix and board[self.pos_x, self.pos_y + 1] == 0:
-            self.probability_matrix[self.pos_x, self.pos_y + 1] = random.random()
-        if [self.pos_x + 1, self.pos_y] in grid_matrix and board[self.pos_x + 1, self.pos_y] == 0:
-            self.probability_matrix[self.pos_x + 1, self.pos_y] = random.random()
-        if [self.pos_x, self.pos_y - 1] in grid_matrix and board[self.pos_x, self.pos_y - 1] == 0:
-            self.probability_matrix[self.pos_x, self.pos_y - 1] = random.random()
-        if [self.pos_x - 1, self.pos_y] in grid_matrix and board[self.pos_x - 1, self.pos_y] == 0:
-            self.probability_matrix[self.pos_x - 1, self.pos_y] = random.random()
-        if [self.pos_x + 1, self.pos_y - 1] in grid_matrix and board[self.pos_x + 1, self.pos_y - 1] == 0:
-            self.probability_matrix[self.pos_x + 1, self.pos_y - 1] = random.random()
-        if [self.pos_x - 1, self.pos_y + 1] in grid_matrix and board[self.pos_x - 1, self.pos_y + 1] == 0:
-            self.probability_matrix[self.pos_x - 1, self.pos_y + 1] = random.random()
-        return self.probability_matrix
+        probability_matrix = probability_matrix_calculation(self.pos_x, self.pos_y)
+        return probability_matrix
 
-    def move(self, dx, dy):
-        if abs(int(dx) * int(dy)) == 1 or abs(int(dx) * int(dy)) == 0:
-            if [self.pos_x + dx, self.pos_y + dy] not in grid_matrix:
-                return None
-            else:
-                if board[self.pos_x + dx, self.pos_y + dy] != 0:
-                    return None
-                else:
-                    board[self.pos_x, self.pos_y] = 0
-                    self.pos_x += dx
-                    self.pos_y += dy
-                    board[self.pos_x, self.pos_y] = 2
-        else:
-            return None
+    def move_goat(self, dx, dy):
+        self.pos_x, self.pos_y = move(self.pos_x, self.pos_y, dx, dy, "move")
         return self.pos_x, self.pos_y
 
 
@@ -174,9 +153,9 @@ class TIGER_AI():
         index_x, index_y = np.where(possible_moves == highest_value)
         dx, dy = index_x[0] - self.Tiger.return_position()[0], index_y[0] - self.Tiger.return_position()[1]
         if highest_value < 1:
-            self.Tiger.move(dx, dy, "move")
+            self.Tiger.move_tiger(dx, dy, "move")
         else:
-            self.Tiger.move(dx, dy, "eat")
+            self.Tiger.move_tiger(dx, dy, "eat")
             self.eat(self.Tiger.return_position()[0] - int(0.5 * dx), self.Tiger.return_position()[1] - int(0.5 * dy))
 
 
