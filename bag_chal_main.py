@@ -8,6 +8,7 @@ board = np.zeros((3, 3))
 """lists of goats and their respective coordinates"""
 goats = []
 goat_coord = []
+max_number_of_goats = 6
 
 
 def probability_matrix_calculation(pos_x, pos_y):
@@ -32,7 +33,9 @@ def probability_matrix_calculation(pos_x, pos_y):
     return probability_matrix
 
 
-def move(pos_x, pos_y, dx, dy, mission):
+def move(pos_x, pos_y, dx, dy, mission, animal):
+    constraint_1 = 0
+    constraint_2 = 0
     if mission == "move":
         """numbers can't be bigger than 1 in each direction"""
         constraint_1 = abs(int(dx) * int(dy)) == 1
@@ -44,17 +47,26 @@ def move(pos_x, pos_y, dx, dy, mission):
     if constraint_1 or constraint_2:
         """check whether the move is inside the grid"""
         if [pos_x + dx, pos_y + dy] not in grid_matrix:
+            # print("not in grid matrix")
             return None
         else:
             """check that the spot we want to move to is free"""
             if board[pos_x + dx, pos_y + dy] != 0:
+                # print("not available")
+                # print(pos_x, pos_y)
+                # print(dx, dy)
+                # print(board[pos_x + dx, pos_y + dy])
                 return None
             else:
                 """execute the move"""
                 board[pos_x, pos_y] = 0
                 pos_x += dx
                 pos_y += dy
-                board[pos_x, pos_y] = 1
+                if animal == "tiger":
+                    board[pos_x, pos_y] = 1
+                elif animal == "goat":
+                    board[pos_x, pos_y] = 2
+
     else:
         return None
     return pos_x, pos_y
@@ -72,7 +84,7 @@ class TIGER:
     """this function checks whether the tiger move is legal and makes the move. works for both normal moves and eating """
 
     def move_tiger(self, dx, dy, mission):
-        self.pos_x, self.pos_y = move(self.pos_x, self.pos_y, dx, dy, mission)
+        self.pos_x, self.pos_y = move(self.pos_x, self.pos_y, dx, dy, mission, "tiger")
         return self.pos_x, self.pos_y
 
     """check if there are any goats nearby and, if yes,
@@ -90,7 +102,7 @@ class TIGER:
     """state all the moves the tiger can move to.
    the square the tiger is currently at in -1,
     unreachable squares are 0 and the possible squares are random between 0 and 1.
-    T"""
+    """
 
     def probabilities_matrix(self):
         probability_matrix = probability_matrix_calculation(self.pos_x, self.pos_y)
@@ -120,7 +132,7 @@ class GOAT:
         return probability_matrix
 
     def move_goat(self, dx, dy):
-        self.pos_x, self.pos_y = move(self.pos_x, self.pos_y, dx, dy, "move")
+        self.pos_x, self.pos_y = move(self.pos_x, self.pos_y, dx, dy, "move", "goat")
         return self.pos_x, self.pos_y
 
 
@@ -166,8 +178,8 @@ class GOAT_AI():
 
     def where_to_place_a_goat(self):
         placement_matrix = np.zeros((3, 3))
-        for i in range(0, 2):
-            for j in range(0, 2):
+        for i in range(0, 3):
+            for j in range(0, 3):
                 if board[i, j] == 0:
                     placement_matrix[i, j] = random.random()
                 else:
@@ -176,19 +188,66 @@ class GOAT_AI():
         index_x, index_y = np.where(placement_matrix == highest_value)
         return index_x[0], index_y[0]
 
+    def placing_a_goat(self):
+        goat_x, goat_y = self.where_to_place_a_goat()
+        goat = GOAT(goat_x, goat_y)
+        goat_coord.append(goat.return_position())
+        goats.append(goat)
+        self.number_of_goats_on_the_board += 1
+
+    def picking_a_goat_to_move(self):
+        location_matrix = np.zeros((3, 3))
+        for i in range(0, 3):
+            for j in range(0, 3):
+                if board[i, j] == 2:
+                    goat = goats[goat_coord.index((i, j))]
+                    movement_matrix = goat.probabilities_matrix()
+                    # print("mm", movement_matrix)
+                    test_matrix = np.zeros((3, 3))
+                    test_matrix[i, j] = -1
+                    if np.all(movement_matrix == test_matrix):
+                        location_matrix[i, j] = 0
+                    else:
+                        location_matrix[i, j] = random.random()
+        # print("lm", location_matrix)
+        highest_value = np.amax(location_matrix)
+        index_x, index_y = np.where(location_matrix == highest_value)
+        goat = goats[goat_coord.index((index_x[0], index_y[0]))]
+        return goat
+
+    def make_a_move(self, Goat):
+        possible_moves = Goat.probabilities_matrix()
+        # print("actual mm", possible_moves)
+        highest_value = np.amax(possible_moves)
+        index_x, index_y = np.where(possible_moves == highest_value)
+        # print("where it should go", (index_x, index_y))
+        position_in_list = goat_coord.index((Goat.return_position()[0], Goat.return_position()[1]))
+        goat_coord[position_in_list] = (index_x[0], index_y[0])
+        dx, dy = index_x[0] - Goat.return_position()[0], index_y[0] - Goat.return_position()[1]
+        Goat.move_goat(dx, dy)
+
+
+"""class PREPARING_OUTPUT():
+    def __init__(self):
+        self.output_list = []
+        
+    def adding_outputs(self,state,action):    """
+
 
 def run_environment(episodes):
     tiger = TIGER(2, 2)
     episode = 0
-    for episode in range(episodes):
-        tiger_ai = TIGER_AI(tiger)
-        goat_x, goat_y = placing_the_goat()
-        goat = GOAT(goat_x, goat_y)
-        goat_coord.append(goat.return_position())
-        goats.append(goat)
-        print(board)
+    tiger_ai = TIGER_AI(tiger)
+    goat_ai = GOAT_AI(max_number_of_goats)
+    while episode < max_number_of_goats:
+        goat_ai.placing_a_goat()
         tiger_ai.make_a_move()
-        print(board)
+        episode += 1
+    if episode < episodes:
+        for remaining_episodes in range(episodes - episode):
+            goat = goat_ai.picking_a_goat_to_move()
+            goat_ai.make_a_move(goat)
+            tiger_ai.make_a_move()
 
 
-run_environment(5)
+run_environment(12)
