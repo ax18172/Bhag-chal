@@ -14,6 +14,7 @@ import collections
 from collections import deque
 from bag_chal_main import board
 import random
+from bag_chal_main import run_environment, GOAT_AI, TIGER_AI, TIGER, GOAT, score__and_game_check
 
 
 class DQNAgent:
@@ -65,4 +66,7 @@ class DQNAgent:
     def save(self, name):
         self.model.save_weights(name)
 
+
+done = False
+if not done:
 
