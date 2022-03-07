@@ -8,7 +8,7 @@ board = np.zeros((3, 3))
 """lists of goats and their respective coordinates"""
 goats = []
 goat_coord = []
-max_number_of_goats_on_the_board = 7
+max_number_of_goats_on_the_board = 6
 goats_to_win_the_game = 2
 tiger_score = 0
 goat_score = 0
@@ -263,15 +263,26 @@ class GOAT_AI():
             return 1, index_x, index_y, dx, dy
 
 
-def score__and_game_check(tiger_ai):
+def tiger_win_check(tiger_ai):
     global tiger_score
-    global goat_score
     global eaten_goats
+    global goat_score
     newly_eaten_goats = tiger_ai.return_killed_goats()
     if newly_eaten_goats != eaten_goats:
         tiger_score += 10
         goat_score -= 10
         eaten_goats = newly_eaten_goats
+    if eaten_goats >= goats_to_win_the_game:
+        tiger_score += 1000
+        goat_score -= 1000
+        return False
+    else:
+        return True
+
+
+def goat_win_check(tiger_ai):
+    global tiger_score
+    global goat_score
     movement_matrix = tiger_ai.return_tiger_probability_matrix()
     index_x, index_y = tiger_ai.return_tiger_position()
     test_matrix = np.zeros((3, 3))
@@ -279,10 +290,6 @@ def score__and_game_check(tiger_ai):
     if np.all(movement_matrix == test_matrix):
         tiger_score -= 1000
         goat_score += 1000
-        return False
-    elif eaten_goats >= goats_to_win_the_game:
-        tiger_score += 1000
-        goat_score -= 1000
         return False
     else:
         return True
@@ -301,19 +308,23 @@ def run_environment(episodes, neural_network_inputs, tiger_dx, tiger_dy, tiger):
             state = board
             print(board)
             current_state = state.copy()
+            done = False
+            play = goat_win_check(tiger_ai)
+            if not play:
+                done = True
+                memory.append((current_state, np.array([0, 0]), tiger_score, current_state, done))
+                break
             if neural_network_inputs:
                 action_tiger = tiger_ai.make_a_move(tiger_dx, tiger_dy, True)
             else:
                 action_tiger = tiger_ai.make_a_move(None, None, False)
-            avialable_goats = avialable_goats - tiger_ai.return_killed_goats()-1
-            print(avialable_goats)
+            avialable_goats = avialable_goats - tiger_ai.return_killed_goats()
             state = board
             print(board)
             next_state = state.copy()
-            play = score__and_game_check(tiger_ai)
             tiger_reward = tiger_score
+            play = tiger_win_check(tiger_ai)
             # goat_reward = goat_score
-            done = False
             if not play:
                 done = True
                 memory.append((current_state, action_tiger, tiger_reward, next_state, done))
@@ -325,6 +336,12 @@ def run_environment(episodes, neural_network_inputs, tiger_dx, tiger_dy, tiger):
             print(board)
             state = board
             current_state = state.copy()
+            done = False
+            play = goat_win_check(tiger_ai)
+            if not play:
+                done = True
+                memory.append((current_state, np.array([0, 0]), tiger_score, current_state, done))
+                break
             if neural_network_inputs:
                 action_tiger = tiger_ai.make_a_move(tiger_dx, tiger_dy, True)
             else:
@@ -332,9 +349,8 @@ def run_environment(episodes, neural_network_inputs, tiger_dx, tiger_dy, tiger):
             state = board
             print(board)
             next_state = state.copy()
-            play = score__and_game_check(tiger_ai)
+            play = tiger_win_check(tiger_ai)
             tiger_reward = tiger_score
-            done = False
             if not play:
                 done = True
                 memory.append((current_state, action_tiger, tiger_reward, next_state, done))
