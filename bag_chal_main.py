@@ -363,3 +363,4 @@ def run_environment(episodes, neural_network_inputs, tiger_dx, tiger_dy, tiger):
 
 run_environment(50, False, None, None, tiger)
 print(memory)
+
