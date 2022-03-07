@@ -14,7 +14,7 @@ import collections
 from collections import deque
 from bag_chal_main import board
 import random
-from bag_chal_main import run_environment, GOAT_AI, TIGER_AI, TIGER, GOAT, score__and_game_check, memory, board, \
+from bag_chal_main import run_environment, GOAT_AI, TIGER_AI, TIGER, GOAT, tiger_score_check,goat_score_check, memory, board, \
     tiger_score, goat_score, max_number_of_goats_on_the_board, grid_matrix
 
 state_size = np.zeros((3, 3))
