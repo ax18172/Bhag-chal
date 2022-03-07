@@ -115,7 +115,7 @@ class TIGER:
         for vector in directions:
             if [self.pos_x + vector[0], self.pos_y + vector[1]] in grid_matrix and board[self.pos_x + vector[0],
                                                                                          self.pos_y + vector[1]] == 0:
-                probability_matrix[self.pos_x + vector[0], self.pos_y + vector[1]] = random.random()
+                probability_matrix[self.pos_x + vector[0], self.pos_y + vector[1]] = random.randint(1, 3)
         return probability_matrix
 
 
@@ -173,7 +173,7 @@ class TIGER_AI():
             highest_value = np.amax(possible_moves)
             index_x, index_y = np.where(possible_moves == highest_value)
             dx, dy = index_x[0] - self.Tiger.return_position()[0], index_y[0] - self.Tiger.return_position()[1]
-        if abs(dx) + abs(dy) <= 2:
+        if abs(dx) < 2 and abs(dy) < 2:
             self.Tiger.move_tiger(dx, dy, "move")
         else:
             self.Tiger.move_tiger(dx, dy, "eat")
@@ -288,25 +288,28 @@ def score__and_game_check(tiger_ai):
         return True
 
 
-def run_environment(episodes, neural_network_inputs, tiger_dx, tiger_dy):
-    tiger = TIGER(2, 2)
-    episode = 0
+tiger = TIGER(2, 2)
+
+
+def run_environment(episodes, neural_network_inputs, tiger_dx, tiger_dy, tiger):
     tiger_ai = TIGER_AI(tiger)
     goat_ai = GOAT_AI(max_number_of_goats_on_the_board)
     avialable_goats = max_number_of_goats_on_the_board
     for episode in range(episodes):
-        if episode < max_number_of_goats_on_the_board:
+        if episode <= max_number_of_goats_on_the_board:
             goat_ai.placing_a_goat()
             state = board
+            print(board)
             current_state = state.copy()
             if neural_network_inputs:
                 action_tiger = tiger_ai.make_a_move(tiger_dx, tiger_dy, True)
             else:
                 action_tiger = tiger_ai.make_a_move(None, None, False)
-            avialable_goats = avialable_goats - tiger_ai.return_killed_goats()
+            avialable_goats = avialable_goats - tiger_ai.return_killed_goats()-1
+            print(avialable_goats)
             state = board
+            print(board)
             next_state = state.copy()
-            episode += 1
             play = score__and_game_check(tiger_ai)
             tiger_reward = tiger_score
             # goat_reward = goat_score
@@ -319,6 +322,7 @@ def run_environment(episodes, neural_network_inputs, tiger_dx, tiger_dy):
         else:
             goat = goat_ai.picking_a_goat_to_move()
             goat_ai.make_a_move(goat)
+            print(board)
             state = board
             current_state = state.copy()
             if neural_network_inputs:
@@ -326,11 +330,11 @@ def run_environment(episodes, neural_network_inputs, tiger_dx, tiger_dy):
             else:
                 action_tiger = tiger_ai.make_a_move(None, None, False)
             state = board
+            print(board)
             next_state = state.copy()
             play = score__and_game_check(tiger_ai)
             tiger_reward = tiger_score
             done = False
-            episode += 1
             if not play:
                 done = True
                 memory.append((current_state, action_tiger, tiger_reward, next_state, done))
@@ -339,4 +343,4 @@ def run_environment(episodes, neural_network_inputs, tiger_dx, tiger_dy):
                 memory.append((current_state, action_tiger, tiger_reward, next_state, done))
 
 
-
+run_environment(10, False, None, None, tiger)
