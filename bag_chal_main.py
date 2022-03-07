@@ -326,7 +326,7 @@ def run_environment(episodes, neural_network_inputs, tiger_dx, tiger_dy, tiger):
             next_state = state.copy()
             tiger_reward = tiger_score
             play, tiger_reward, goat_reward = tiger_score_check(tiger_ai)
-            # goat_reward = goat_score
+            #goat_reward = goat_score
             if not play:
                 done = True
                 memory.append((current_state, action_tiger, tiger_reward, next_state, done))
@@ -352,7 +352,7 @@ def run_environment(episodes, neural_network_inputs, tiger_dx, tiger_dy, tiger):
             print(board)
             next_state = state.copy()
             play, tiger_reward, goat_reward = tiger_score_check(tiger_ai)
-            tiger_reward = tiger_score
+            #tiger_reward = tiger_score
             if not play:
                 done = True
                 memory.append((current_state, action_tiger, tiger_reward, next_state, done))
@@ -361,5 +361,5 @@ def run_environment(episodes, neural_network_inputs, tiger_dx, tiger_dy, tiger):
                 memory.append((current_state, action_tiger, tiger_reward, next_state, done))
 
 
-run_environment(15, False, None, None, tiger)
+run_environment(50, False, None, None, tiger)
 print(memory)
