@@ -36,26 +36,30 @@ def probability_matrix_calculation(pos_x, pos_y):
         probability_matrix[pos_x + 1, pos_y - 1] = random.random()
     if [pos_x - 1, pos_y + 1] in grid_matrix and board[pos_x - 1, pos_y + 1] == 0:
         probability_matrix[pos_x - 1, pos_y + 1] = random.random()
+    if [pos_x, pos_y] in restricted_cells and [pos_x + 1, pos_y + 1] in grid_matrix:
+        probability_matrix[pos_x + 1, pos_y + 1] = 0
+    if [pos_x, pos_y] in restricted_cells and [pos_x - 1, pos_y - 1] in grid_matrix:
+        probability_matrix[pos_x - 1, pos_y - 1] = 0
+    if [pos_x, pos_y] in restricted_cells and [pos_x + 1, pos_y - 1] in grid_matrix:
+        probability_matrix[pos_x + 1, pos_y - 1] = 0
+    if [pos_x, pos_y] in restricted_cells and [pos_x - 1, pos_y + 1] in grid_matrix:
+        probability_matrix[pos_x - 1, pos_y + 1] = 0
+    # print ("probability_matrix = ", probability_matrix)
     return probability_matrix
 
 
 def move(pos_x, pos_y, dx, dy, mission, animal):
     constraint_1 = 0
     constraint_2 = 0
-    constraint_3 = 0
     if mission == "move":
         """numbers can't be bigger than 1 in each direction"""
         constraint_1 = abs(int(dx) * int(dy)) == 1
         constraint_2 = abs(int(dx) * int(dy)) == 0
-        if [pos_x, pos_y] in restricted_cells:
-            constraint_3 = abs(int(dx) + abs(int(dy)) == 1)
         """numbers can't be bigger than 2 in each direction"""
     elif mission == "eat":
         constraint_1 = abs(int(dx) * int(dy)) == 4
         constraint_2 = abs(int(dx) * int(dy)) == 0
-        if [pos_x, pos_y] in restricted_cells:
-            constraint_3 = abs(int(dx) + abs(int(dy)) == 2)
-    if constraint_1 or constraint_2 or constraint_3:
+    if constraint_1 or constraint_2:
         """check whether the move is inside the grid"""
         if [pos_x + dx, pos_y + dy] not in grid_matrix:
             # print("not in grid matrix")
@@ -68,8 +72,34 @@ def move(pos_x, pos_y, dx, dy, mission, animal):
                 # print(dx, dy)
                 # print(board[pos_x + dx, pos_y + dy])
                 return None
+            elif [pos_x, pos_y] in restricted_cells and mission == 'move':
+                if (abs(int(dx)) + abs(int(dy))) == 2:
+                    return None
+                else:
+                    """execute the move"""
+                    board[pos_x, pos_y] = 0
+                    pos_x += dx
+                    pos_y += dy
+                    if animal == "tiger":
+                        board[pos_x, pos_y] = 1
+                    elif animal == "goat":
+                        board[pos_x, pos_y] = 2
+            
+            elif [pos_x, pos_y] in restricted_cells and mission == 'eat':
+                if (abs(int(dx)) + abs(int(dy))) == 4:
+                    return None
+                else:
+                    """execute the move"""
+                    board[pos_x, pos_y] = 0
+                    pos_x += dx
+                    pos_y += dy
+                    if animal == "tiger":
+                        board[pos_x, pos_y] = 1
+                    elif animal == "goat":
+                        board[pos_x, pos_y] = 2
+                    pass
             #elif [pos_x, pos_y] in restricted_cells:
-            #    if abs(int(dx) + abs(int(dy)) == 2)
+            #   if abs(int(dx) + abs(int(dy)) == 2)
             else:
                 """execute the move"""
                 board[pos_x, pos_y] = 0
@@ -108,8 +138,14 @@ class TIGER:
         for goat in goat_coord:
             goat_x, goat_y = goat
             if abs(self.pos_x - goat_x) <= 1 and abs(self.pos_y - goat_y) <= 1:
-                vector = 2 * (goat_x - self.pos_x), 2 * (goat_y - self.pos_y)
-                attack_directions.append(vector)
+                if [self.pos_x, self.pos_y] not in restricted_cells: #and [goat_x, goat_y] not in restricted_cells:
+                    vector = 2 * (goat_x - self.pos_x), 2 * (goat_y - self.pos_y)
+                    attack_directions.append(vector)
+                elif [self.pos_x, self.pos_y] in restricted_cells and [goat_x, goat_y] not in restricted_cells:
+                    vector = 2 * (goat_x - self.pos_x), 2 * (goat_y - self.pos_y)
+                    attack_directions.append(vector)
+                else:
+                    pass
         return attack_directions
 
     """state all the moves the tiger can move to.
