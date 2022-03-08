@@ -9,13 +9,13 @@ board = np.zeros((5, 5))
 goats = []
 goat_coord = []
 max_number_of_goats_on_the_board = 20
-goats_to_win_the_game = 2
+goats_to_win_the_game = 20
 tiger_score = 0
 goat_score = 0
 eaten_goats = 0
 memory = []
 """list of cells on the board where only possible movements are horizontal and vertical, not diagonal"""
-restricted_cells = [[1,0], [3, 0], [0, 1], [2, 1], [4, 1], [1, 2], [3, 2], [0, 3], [2, 3], [4, 3], [1, 4], [3, 4]]
+restricted_cells = [[1, 0], [3, 0], [0, 1], [2, 1], [4, 1], [1, 2], [3, 2], [0, 3], [2, 3], [4, 3], [1, 4], [3, 4]]
 
 def probability_matrix_calculation(pos_x, pos_y):
     probability_matrix = np.zeros((5, 5))
@@ -42,15 +42,20 @@ def probability_matrix_calculation(pos_x, pos_y):
 def move(pos_x, pos_y, dx, dy, mission, animal):
     constraint_1 = 0
     constraint_2 = 0
+    constraint_3 = 0
     if mission == "move":
         """numbers can't be bigger than 1 in each direction"""
         constraint_1 = abs(int(dx) * int(dy)) == 1
         constraint_2 = abs(int(dx) * int(dy)) == 0
+        if [pos_x, pos_y] in restricted_cells:
+            constraint_3 = abs(int(dx) + abs(int(dy)) == 1)
         """numbers can't be bigger than 2 in each direction"""
     elif mission == "eat":
         constraint_1 = abs(int(dx) * int(dy)) == 4
         constraint_2 = abs(int(dx) * int(dy)) == 0
-    if constraint_1 or constraint_2:
+        if [pos_x, pos_y] in restricted_cells:
+            constraint_3 = abs(int(dx) + abs(int(dy)) == 2)
+    if constraint_1 or constraint_2 or constraint_3:
         """check whether the move is inside the grid"""
         if [pos_x + dx, pos_y + dy] not in grid_matrix:
             # print("not in grid matrix")
@@ -63,6 +68,8 @@ def move(pos_x, pos_y, dx, dy, mission, animal):
                 # print(dx, dy)
                 # print(board[pos_x + dx, pos_y + dy])
                 return None
+            #elif [pos_x, pos_y] in restricted_cells:
+            #    if abs(int(dx) + abs(int(dy)) == 2)
             else:
                 """execute the move"""
                 board[pos_x, pos_y] = 0
