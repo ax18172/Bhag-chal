@@ -14,7 +14,8 @@ tiger_score = 0
 goat_score = 0
 eaten_goats = 0
 memory = []
-
+"""list of cells on the board where only possible movements are horizontal and vertical, not diagonal"""
+restricted_cells = [[1,0], [3, 0], [0, 1], [2, 1], [4, 1], [1, 2], [3, 2], [0, 3], [2, 3], [4, 3], [1, 4], [3, 4]]
 
 def probability_matrix_calculation(pos_x, pos_y):
     probability_matrix = np.zeros((5, 5))
