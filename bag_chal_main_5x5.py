@@ -344,6 +344,7 @@ def goat_score_check(tiger_ai):
 tiger = TIGER(4, 4)
 
 
+
 def run_environment(episodes, neural_network_inputs, tiger_dx, tiger_dy, tiger):
     tiger_ai = TIGER_AI(tiger)
     goat_ai = GOAT_AI(max_number_of_goats_on_the_board)
@@ -405,6 +406,6 @@ def run_environment(episodes, neural_network_inputs, tiger_dx, tiger_dy, tiger):
                 memory.append((current_state, action_tiger, tiger_reward, next_state, done))
 
 
-run_environment(50, False, None, None, tiger)
+run_environment(1000, False, None, None, tiger)
 print(memory)
 
