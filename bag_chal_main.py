@@ -396,7 +396,7 @@ def run_environment(board, tiger, goat_coord, goats, neural_network_inputs, tige
             goat_ai.placing_a_goat(board, goat_coord, goats)
             avialable_goats -= 1
         state = board
-        print(board)
+        #print(board)
         current_state = state.copy()
         done = False
         play, tiger_reward, goat_reward = goat_score_check(tiger_ai, board, goat_coord)
@@ -409,7 +409,7 @@ def run_environment(board, tiger, goat_coord, goats, neural_network_inputs, tige
             else:
                 action_tiger = tiger_ai.make_a_move(None, None, False, board, goat_coord, goats)
                 state = board
-                print(board)
+                #print(board)
                 next_state = state.copy()
                 play, tiger_reward, goat_reward, eaten_goats = tiger_score_check(tiger_ai, eaten_goats)
                 if not play:

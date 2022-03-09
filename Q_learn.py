@@ -109,11 +109,53 @@ number_of_simulations = 31
     if len(memory) > batch_size:
         agent.replay(batch_size)"""
 for simulation in range(number_of_simulations):
-    board = np.zeros((3, 3))
+    board_dimension = 3
+    board = np.zeros((board_dimension, board_dimension))
     goat_coord = []
     goats = []
-    maximum_number_of_simulations = 30
+    maximum_number_of_timesteps = 30
+    eaten_goats = 0
     tiger = TIGER(2, 2, board)
     tiger_ai = TIGER_AI(tiger)
     goat_ai = GOAT_AI(max_number_of_goats_on_the_board)
-
+    avialable_goats = max_number_of_goats_on_the_board
+    for timestep in range(maximum_number_of_timesteps):
+        decision = agent.act_decision()
+        if decision == "random":
+            board, goat_coord, goats, tiger, eaten_goats, tiger_ai, goat_ai, avialable_goats = run_environment(board,
+                                                                                                               tiger,
+                                                                                                               goat_coord,
+                                                                                                               goats,
+                                                                                                               False,
+                                                                                                               None,
+                                                                                                               None,
+                                                                                                               maximum_number_of_timesteps,
+                                                                                                               timestep,
+                                                                                                               board_dimension,
+                                                                                                               eaten_goats,
+                                                                                                               tiger_ai,
+                                                                                                               goat_ai,
+                                                                                                               avialable_goats)
+            #print(board)
+        elif decision == "neural network":
+            state = board
+            current_state = board.copy()
+            q_values = agent.model.predict(np.reshape(state, (1, 9)))
+            move_q_value = int(np.argmax(q_values))
+            tiger_dx, tiger_dy = possible_moves[move_q_value]
+            board, goat_coord, goats, tiger, eaten_goats, tiger_ai, goat_ai, avialable_goats = run_environment(board,
+                                                                                                               tiger,
+                                                                                                               goat_coord,
+                                                                                                               goats,
+                                                                                                               True,
+                                                                                                               tiger_dx,
+                                                                                                               tiger_dy,
+                                                                                                               maximum_number_of_timesteps,
+                                                                                                               timestep,
+                                                                                                               board_dimension,
+                                                                                                               eaten_goats,
+                                                                                                               tiger_ai,
+                                                                                                               goat_ai,
+                                                                                                               avialable_goats)
+        if memory[-1][-1]:
+           break
