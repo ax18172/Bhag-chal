@@ -81,7 +81,7 @@ class DQNAgent:
 
 
 agent = DQNAgent(state_size, action_size_tiger)
-number_of_simulations = 100
+number_of_simulations = 33
 
 for simulation in range(number_of_simulations):
     board_dimension = 3
@@ -94,9 +94,11 @@ for simulation in range(number_of_simulations):
     tiger_ai = TIGER_AI(tiger)
     goat_ai = GOAT_AI(max_number_of_goats_on_the_board)
     avialable_goats = max_number_of_goats_on_the_board
+    decision = agent.act_decision()
     for timestep in range(maximum_number_of_timesteps):
-        decision = agent.act_decision()
+        #print(board)
         if decision == "random":
+            print(board)
             board, goat_coord, goats, tiger, eaten_goats, tiger_ai, goat_ai, avialable_goats = run_environment(board,
                                                                                                                tiger,
                                                                                                                goat_coord,
@@ -113,13 +115,15 @@ for simulation in range(number_of_simulations):
                                                                                                                avialable_goats)
             # print(board)
         elif decision == "neural network":
+            #print(board)
             state = board
             current_state = board.copy()
-            q_values = agent.model.predict(np.reshape(state, (1, 9)))
+            #print(current_state)
+            q_values = agent.model.predict(np.reshape(current_state, (1, 9)))
             move_q_value = int(np.argmax(q_values))
             tiger_dx, tiger_dy = possible_moves[move_q_value]
-            #print(board)
-            #print(tiger_dx, tiger_dy)
+            # print("after",board)
+            # print(tiger_dx, tiger_dy)
             board, goat_coord, goats, tiger, eaten_goats, tiger_ai, goat_ai, avialable_goats = run_environment(board,
                                                                                                                tiger,
                                                                                                                goat_coord,
@@ -134,7 +138,7 @@ for simulation in range(number_of_simulations):
                                                                                                                tiger_ai,
                                                                                                                goat_ai,
                                                                                                                avialable_goats)
-            print(board)
+            #print("after", board)
         if memory[-1][-1]:
             break
         if len(memory) > batch_size:

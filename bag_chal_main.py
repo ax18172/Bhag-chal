@@ -145,13 +145,18 @@ class TIGER_AI():
         self.killed_goats = 0
 
     def eat(self, goat_x, goat_y, board, goat_coord, goats):
-        board[goat_x, goat_y] = 0
-        index = goat_coord.index((goat_x, goat_y))
-        del goat_coord[index]
-        del goats[index]
+        goat_present = False
+        if (goat_x, goat_y) in goat_coord:
+            board[goat_x, goat_y] = 0
+            index = goat_coord.index((goat_x, goat_y))
+            del goat_coord[index]
+            del goats[index]
+            goat_present = True
+        return goat_present
 
     def make_a_move(self, dx_nn, dy_nn, neural_network_inputs, board, goat_coord, goats):
         move_is_made = False
+        goat_is_present = False
         if neural_network_inputs:
             dx, dy = dx_nn, dy_nn
         else:
@@ -161,17 +166,21 @@ class TIGER_AI():
             dx, dy = index_x[0] - self.Tiger.return_position()[0], index_y[0] - self.Tiger.return_position()[1]
         if abs(dx) < 2 and abs(dy) < 2:
             pos_x, pos_y, tiger_moved = self.Tiger.move_tiger(dx, dy, "move", board)
+            # print(tiger_moved)
             if tiger_moved:
                 move_is_made = True
+                goat_is_present = True
         else:
             pos_x, pos_y, tiger_moved = self.Tiger.move_tiger(dx, dy, "eat", board)
-            print(tiger_moved)
+            # print(tiger_moved)
             if tiger_moved:
                 move_is_made = True
-                self.eat(self.Tiger.return_position()[0] - int(0.5 * dx),
-                         self.Tiger.return_position()[1] - int(0.5 * dy), board, goat_coord, goats)
+                goat_is_found = self.eat(self.Tiger.return_position()[0] - int(0.5 * dx),
+                                         self.Tiger.return_position()[1] - int(0.5 * dy), board, goat_coord, goats)
+                if goat_is_found:
+                    goat_is_present = True
                 self.killed_goats += 1
-        return (dx, dy), move_is_made
+        return (dx, dy), move_is_made, goat_is_present
 
     def return_killed_goats(self):
         return self.killed_goats
@@ -254,11 +263,13 @@ class GOAT_AI:
             return 1, index_x, index_y, dx, dy
 
 
-def tiger_score_check(tiger_ai, eaten_goats, move_is_made):
+def tiger_score_check(tiger_ai, eaten_goats, move_is_made, goat_is_present):
     newly_eaten_goats = tiger_ai.return_killed_goats()
     tiger_reward = 0
     goat_reward = 0
     if not move_is_made:
+        tiger_reward = -10
+    elif not goat_is_present:
         tiger_reward = -10
     if newly_eaten_goats != eaten_goats:
         tiger_reward = 10
@@ -303,7 +314,7 @@ def run_environment(board, tiger, goat_coord, goats, neural_network_inputs, tige
             goat_ai.placing_a_goat(board, goat_coord, goats)
             avialable_goats -= 1
         state = board
-        # print(board)
+        #print(board)
         current_state = state.copy()
         done = False
         play, tiger_reward, goat_reward = goat_score_check(tiger_ai, board, goat_coord)
@@ -312,16 +323,24 @@ def run_environment(board, tiger, goat_coord, goats, neural_network_inputs, tige
             memory.append((current_state, np.array([0, 0]), tiger_reward, current_state, done))
         else:
             if neural_network_inputs:
-                action_tiger, move_is_made = tiger_ai.make_a_move(tiger_dx, tiger_dy, True, board, goat_coord, goats)
+                action_tiger, move_is_made, goat_is_present = tiger_ai.make_a_move(tiger_dx, tiger_dy, True, board,
+                                                                                   goat_coord, goats)
                 if not move_is_made:
-                    action_tiger, move_is_made = tiger_ai.make_a_move(None, None, False, board, goat_coord, goats)
+                    action_tiger, move_is_made, goat_is_present = tiger_ai.make_a_move(None, None, False, board,
+                                                                                       goat_coord, goats)
                     move_is_made = False
+                elif not goat_is_present:
+                    action_tiger, move_is_made, goat_is_present = tiger_ai.make_a_move(None, None, False, board,
+                                                                                       goat_coord, goats)
+                    goat_is_present = False
             else:
-                action_tiger, move_is_made = tiger_ai.make_a_move(None, None, False, board, goat_coord, goats)
+                action_tiger, move_is_made, goat_is_present = tiger_ai.make_a_move(None, None, False, board, goat_coord,
+                                                                                   goats)
                 state = board
-                # print(board)
+                #print(board)
                 next_state = state.copy()
-                play, tiger_reward, goat_reward, eaten_goats = tiger_score_check(tiger_ai, eaten_goats, move_is_made)
+                play, tiger_reward, goat_reward, eaten_goats = tiger_score_check(tiger_ai, eaten_goats, move_is_made,
+                                                                                 goat_is_present)
                 if not play:
                     done = True
                     memory.append((current_state, action_tiger, tiger_reward, next_state, done))
@@ -331,25 +350,29 @@ def run_environment(board, tiger, goat_coord, goats, neural_network_inputs, tige
         goat = goat_ai.picking_a_goat_to_move(board, goats, goat_coord)
         goat_ai.make_a_move(goat, board, goat_coord)
         state = board
-        # print(board)
+        #print(board)
         current_state = state.copy()
         done = False
         play, tiger_reward, goat_reward = goat_score_check(tiger_ai, board, goat_coord)
-        if not play:
-            done = True
-            memory.append((current_state, np.array([0, 0]), tiger_reward, current_state, done))
+        if neural_network_inputs:
+            action_tiger, move_is_made, goat_is_present = tiger_ai.make_a_move(tiger_dx, tiger_dy, True, board,
+                                                                               goat_coord, goats)
+            if not move_is_made:
+                action_tiger, move_is_made, goat_is_present = tiger_ai.make_a_move(None, None, False, board,
+                                                                                   goat_coord, goats)
+                move_is_made = False
+            elif not goat_is_present:
+                action_tiger, move_is_made, goat_is_present = tiger_ai.make_a_move(None, None, False, board,
+                                                                                   goat_coord, goats)
+                goat_is_present = False
         else:
-            if neural_network_inputs:
-                action_tiger, move_is_made = tiger_ai.make_a_move(tiger_dx, tiger_dy, True, board, goat_coord, goats)
-                if not move_is_made:
-                    action_tiger, move_is_made = tiger_ai.make_a_move(None, None, False, board, goat_coord, goats)
-                    move_is_made = False
-            else:
-                action_tiger, move_is_made = tiger_ai.make_a_move(None, None, False, board, goat_coord, goats)
-            # print(board)
+            action_tiger, move_is_made, goat_is_present = tiger_ai.make_a_move(None, None, False, board, goat_coord,
+                                                                               goats)
             state = board
+            #print(board)
             next_state = state.copy()
-            play, tiger_reward, goat_reward, eaten_goats = tiger_score_check(tiger_ai, eaten_goats, move_is_made)
+            play, tiger_reward, goat_reward, eaten_goats = tiger_score_check(tiger_ai, eaten_goats, move_is_made,
+                                                                             goat_is_present)
             if not play:
                 done = True
                 memory.append((current_state, action_tiger, tiger_reward, next_state, done))
