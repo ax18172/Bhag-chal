@@ -149,11 +149,17 @@ class TIGER:
                 else:
                     pass
         return attack_directions
-
+    
+    
     """state all the moves the tiger can move to.
    the square the tiger is currently at in -1,
     unreachable squares are 0 and the possible squares are random between 0 and 1.
     """
+    #def return_tiger_probability_matrix(self):
+    #    return self.probabilities_matrix()
+    
+    #def return_tiger_position(self):
+    #    return self.return_position()
 
     def probabilities_matrix(self):
         probability_matrix = probability_matrix_calculation(self.pos_x, self.pos_y)
@@ -204,8 +210,7 @@ def placing_the_goat():
 
 
 class TIGER_AI:
-    def __init__(self, tiger):
-        self.Tiger = tiger
+    def __init__(self):#, tiger):
         self.killed_goats = 0
 
     def eat(self, goat_x, goat_y):
@@ -230,21 +235,38 @@ class TIGER_AI:
             index_x, index_y = index_x[0], index_y[0]
         return index_x, index_y
     
+#     def placing_a_tiger(self):
+#         tiger_x, tiger_y = self#self.where_to_place_a_tiger(None, None, False)
+#         tiger = TIGER(tiger_x, tiger_y)
+#         tiger_coord.append(tiger.return_position())
+#         tigers.append(tiger)
+# #        self.number_of_tigers_on_the_board += 1
     def placing_a_tiger(self):
-        tiger_x, tiger_y = self#self.where_to_place_a_tiger(None, None, False)
+        tiger_x, tiger_y = (0,0)#self.where_to_place_a_tiger(None, None, False)
         tiger = TIGER(tiger_x, tiger_y)
         tiger_coord.append(tiger.return_position())
         tigers.append(tiger)
-#        self.number_of_tigers_on_the_board += 1
-    
+        tiger_x, tiger_y = (0,4)#self.where_to_place_a_tiger(None, None, False)
+        tiger = TIGER(tiger_x, tiger_y)
+        tiger_coord.append(tiger.return_position())
+        tigers.append(tiger)
+        tiger_x, tiger_y = (4,0)#self.where_to_place_a_tiger(None, None, False)
+        tiger = TIGER(tiger_x, tiger_y)
+        tiger_coord.append(tiger.return_position())
+        tigers.append(tiger)
+        tiger_x, tiger_y = (4,4)#self.where_to_place_a_tiger(None, None, False)
+        tiger = TIGER(tiger_x, tiger_y)
+        tiger_coord.append(tiger.return_position())
+        tigers.append(tiger)
+        
     def picking_a_tiger_to_move(self):
         location_matrix = np.zeros((5, 5))
         for i in range(0, 5):
             for j in range(0, 5):
-                if board[i, j] == 2:
+                if board[i, j] == 1:
                     tiger = tigers[tiger_coord.index((i, j))]
                     movement_matrix = tiger.probabilities_matrix()
-                    print (movement_matrix)
+                    #print (movement_matrix)
                     # print("mm", movement_matrix)
                     test_matrix = np.zeros((5, 5))
                     test_matrix[i, j] = -1
@@ -258,20 +280,22 @@ class TIGER_AI:
         tiger = tigers[tiger_coord.index((index_x[0], index_y[0]))]
         return tiger    
         
-    def make_a_move(self, dx_nn, dy_nn, neural_network_inputs):
+    def make_a_move(self, tiger, dx_nn, dy_nn, neural_network_inputs):
         if neural_network_inputs:
             dx, dy = dx_nn, dy_nn
         else:
-            possible_moves = self.Tiger.probabilities_matrix()
+            possible_moves = self.tiger.probabilities_matrix()
             highest_value = np.amax(possible_moves)
             index_x, index_y = np.where(possible_moves == highest_value)
-            dx, dy = index_x[0] - self.Tiger.return_position()[0], index_y[0] - self.Tiger.return_position()[1]
+            position_in_list = tiger_coord.index((tiger.return_position()[0], tiger.return_position()[1]))
+            tiger_coord[position_in_list] = (index_x[0], index_y[0])
+            dx, dy = index_x[0] - self.tiger.return_position()[0], index_y[0] - self.tiger.return_position()[1]
         if abs(dx) < 2 and abs(dy) < 2:
-            self.Tiger.move_tiger(dx, dy, "move")
+            self.tiger.move_tiger(dx, dy, "move")
         else:
-            self.Tiger.move_tiger(dx, dy, "eat")
-            self.eat(self.Tiger.return_position()[0] - int(0.5 * dx),
-                     self.Tiger.return_position()[1] - int(0.5 * dy))
+            self.tiger.move_tiger(dx, dy, "eat")
+            self.eat(self.tiger.return_position()[0] - int(0.5 * dx),
+                     self.tiger.return_position()[1] - int(0.5 * dy))
             self.killed_goats += 1
         return dx, dy
     
@@ -284,11 +308,13 @@ class TIGER_AI:
     def return_killed_goats(self):
         return self.killed_goats
 
-    def return_tiger_position(self):
-        return self.Tiger.return_position()
+    def return_tiger_position(self,tiger):
+        self.tiger = tiger
+        return self.tiger.return_position()
 
-    def return_tiger_probability_matrix(self):
-        return self.Tiger.probabilities_matrix()
+    def return_tiger_probability_matrix(self,tiger):
+        self.tiger = tiger
+        return self.tiger.probabilities_matrix()
 
 
 class GOAT_AI():
@@ -381,11 +407,11 @@ def tiger_score_check(tiger_ai):
         return True, tiger_reward, goat_reward
 
 
-def goat_score_check(tiger_ai):
+def goat_score_check(tiger_ai,tiger):
     tiger_reward = 0
     goat_reward = 0
-    movement_matrix = tiger_ai.return_tiger_probability_matrix()
-    index_x, index_y = tiger_ai.return_tiger_position()
+    movement_matrix = tiger_ai.return_tiger_probability_matrix(tiger)
+    index_x, index_y = tiger_ai.return_tiger_position(tiger)
     test_matrix = np.zeros((5, 5))
     test_matrix[index_x, index_y] = -1
     if np.all(movement_matrix == test_matrix):
@@ -403,17 +429,20 @@ def goat_score_check(tiger_ai):
 #TIGER_AI(TIGER(0,4))
 #TIGER_AI(TIGER(4,0))
 #TIGER_AI(TIGER(4,4))
-tiger = TIGER(4, 4)
+#tiger = TIGER(4, 4)
 #tiger = tiger_list
 def run_environment(episodes, neural_network_inputs, tiger_dx, tiger_dy):#, tiger):
     
-    tiger_ai = TIGER_AI(TIGER(0,0))
+    #tiger_ai = TIGER_AI()#TIGER(0,0))
+    
     goat_ai = GOAT_AI(max_number_of_goats_on_the_board)
     avialable_goats = max_number_of_goats_on_the_board
-    TIGER_AI.placing_a_tiger([0,0])
-    TIGER_AI.placing_a_tiger([4,0])
-    TIGER_AI.placing_a_tiger([0,4])
-    TIGER_AI.placing_a_tiger([4,4])
+    tiger_ai = TIGER_AI()
+    tiger_ai.placing_a_tiger()
+#    tiger_ai.placing_a_tiger([4,0])
+#    tiger_ai.placing_a_tiger([0,4])
+#    tiger_ai.placing_a_tiger([4,4])
+    #tiger_ai = TIGER_AI()
     for episode in range(episodes):
         if episode <= max_number_of_goats_on_the_board:
             goat_ai.placing_a_goat()
@@ -421,21 +450,22 @@ def run_environment(episodes, neural_network_inputs, tiger_dx, tiger_dy):#, tige
             print(board)
             current_state = state.copy()
             done = False
-            play, tiger_reward, goat_reward = goat_score_check(tiger_ai)
+            tiger = tiger_ai.picking_a_tiger_to_move()
+            play, tiger_reward, goat_reward = goat_score_check(tiger_ai,tiger)
             if not play:
                 done = True
                 memory.append((current_state, np.array([0, 0]), tiger_reward, current_state, done))
                 break
             if neural_network_inputs:
                 
-                tiger = TIGER_AI.picking_a_tiger_to_move(TIGER(0,0))
+                tiger = tiger_ai.picking_a_tiger_to_move()#TIGER(0,0))
                 
                 action_tiger = tiger_ai.make_a_move(tiger_dx, tiger_dy, True)
             else:
                 
-                tiger = TIGER_AI(TIGER(0,0))#.picking_a_tiger_to_move(TIGER(0,0))
+                tiger = tiger_ai.picking_a_tiger_to_move()#TIGER(0,0))
                 
-                action_tiger = tiger_ai.make_a_move(None, None, False)
+                action_tiger = tiger_ai.make_a_move(tiger, None, None, False)
             avialable_goats = avialable_goats - tiger_ai.return_killed_goats()
             state = board
             print(board)
@@ -464,8 +494,8 @@ def run_environment(episodes, neural_network_inputs, tiger_dx, tiger_dy):#, tige
                 tiger = TIGER_AI.picking_a_tiger_to_move()
                 action_tiger = tiger_ai.make_a_move(tiger_dx, tiger_dy, True)
             else:
-                tiger = TIGER_AI(TIGER(0,0))#.picking_a_tiger_to_move()
-                action_tiger = tiger_ai.make_a_move(None, None, False)
+                tiger = tiger_ai.picking_a_tiger_to_move()#TIGER(0,0))#.picking_a_tiger_to_move()
+                action_tiger = tiger_ai.make_a_move(tiger,None, None, False)
             state = board
             print(board)
             next_state = state.copy()
