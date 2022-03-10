@@ -50,9 +50,10 @@ def probability_matrix_calculation(pos_x, pos_y):
     return probability_matrix
 
 
-def move(pos_x, pos_y, dx, dy, mission, animal):
+def move(pos_x, pos_y, dx, dy, mission, animal, board):
     constraint_1 = 0
     constraint_2 = 0
+    move_is_made = False
     if mission == "move":
         """numbers can't be bigger than 1 in each direction"""
         constraint_1 = abs(int(dx) * int(dy)) == 1
@@ -64,15 +65,10 @@ def move(pos_x, pos_y, dx, dy, mission, animal):
     if constraint_1 or constraint_2:
         """check whether the move is inside the grid"""
         if [pos_x + dx, pos_y + dy] not in grid_matrix:
-            # print("not in grid matrix")
             return None
         else:
             """check that the spot we want to move to is free"""
             if board[pos_x + dx, pos_y + dy] != 0:
-                # print("not available")
-                # print(pos_x, pos_y)
-                # print(dx, dy)
-                # print(board[pos_x + dx, pos_y + dy])
                 return None
             elif [pos_x, pos_y] in restricted_cells and mission == 'move':
                 if (abs(int(dx)) + abs(int(dy))) == 2:
@@ -100,8 +96,6 @@ def move(pos_x, pos_y, dx, dy, mission, animal):
                     elif animal == "goat":
                         board[pos_x, pos_y] = 2
                     pass
-            #elif [pos_x, pos_y] in restricted_cells:
-            #   if abs(int(dx) + abs(int(dy)) == 2)
             else:
                 """execute the move"""
                 board[pos_x, pos_y] = 0
@@ -111,7 +105,6 @@ def move(pos_x, pos_y, dx, dy, mission, animal):
                     board[pos_x, pos_y] = 1
                 elif animal == "goat":
                     board[pos_x, pos_y] = 2
-
     else:
         return None
     return pos_x, pos_y
