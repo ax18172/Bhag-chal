@@ -9,7 +9,7 @@ grid_matrix = [[0, 0], [0, 1], [0, 2], [0, 3], [0, 4], [1, 0], [1, 1], [1, 2], [
 # goats = []
 # goat_coord = []
 max_number_of_goats_on_the_board = 20
-goats_to_win_the_game = 20
+goats_to_win_the_game = 2
 # eaten_goats = 0
 memory = []
 restricted_cells = [[1, 0], [3, 0], [0, 1], [2, 1], [4, 1], [1, 2], [3, 2], [0, 3], [2, 3], [4, 3], [1, 4], [3, 4]]
@@ -432,6 +432,7 @@ def run_environment(board, tiger_coord, tigers, goat_coord, goats, neural_networ
                 else:
                     memory.append((current_state, action_tiger, tiger_reward, next_state, done))
     else:
+        tiger_ai = TIGER_AI(tigers, board, tiger_coord, goat_coord)
         goat = goat_ai.picking_a_goat_to_move(board, goats, goat_coord)
         goat_ai.make_a_move(goat, board, goat_coord)
         state = board
