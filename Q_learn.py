@@ -32,7 +32,7 @@ class DQNAgent:
         self.action_size = action_size
         self.memory = deque(maxlen=2000)
         self.gamma = 0.95
-        self.epsilon = 0.5
+        self.epsilon = 0.8
         self.epsilon_decay = 0.995
         self.epsilon_min = 0.01
         self.learning_rate = 0.001
@@ -43,9 +43,6 @@ class DQNAgent:
         model = Sequential()
         model.add(Dense(9, input_shape=(self.state_size.shape[1],), activation="relu"))
         model.add(Dense(18, activation="relu"))
-        model.add(Dense(36, activation="relu"))
-        model.add(Dense(18, activation="relu"))
-        model.add(Dense(9, activation="relu"))
         model.add(Dense(16, activation="linear"))
         model.compile(loss="mse", optimizer=tf.keras.optimizers.Adam(learning_rate=self.learning_rate))
         return model
@@ -81,7 +78,7 @@ class DQNAgent:
 
 
 agent = DQNAgent(state_size, action_size_tiger)
-number_of_simulations = 33
+number_of_simulations = 100
 
 for simulation in range(number_of_simulations):
     board_dimension = 3
@@ -96,9 +93,9 @@ for simulation in range(number_of_simulations):
     avialable_goats = max_number_of_goats_on_the_board
     decision = agent.act_decision()
     for timestep in range(maximum_number_of_timesteps):
-        #print(board)
+        # print(board)
         if decision == "random":
-            print(board)
+            print("normal first", board)
             board, goat_coord, goats, tiger, eaten_goats, tiger_ai, goat_ai, avialable_goats = run_environment(board,
                                                                                                                tiger,
                                                                                                                goat_coord,
@@ -113,17 +110,16 @@ for simulation in range(number_of_simulations):
                                                                                                                tiger_ai,
                                                                                                                goat_ai,
                                                                                                                avialable_goats)
-            # print(board)
+            print("normal second", board)
         elif decision == "neural network":
-            #print(board)
-            state = board
+            print("neural first", board)
+            # print(board)
             current_state = board.copy()
-            #print(current_state)
+            # print(current_state)
             q_values = agent.model.predict(np.reshape(current_state, (1, 9)))
             move_q_value = int(np.argmax(q_values))
             tiger_dx, tiger_dy = possible_moves[move_q_value]
-            # print("after",board)
-            # print(tiger_dx, tiger_dy)
+            print(tiger_dx, tiger_dy)
             board, goat_coord, goats, tiger, eaten_goats, tiger_ai, goat_ai, avialable_goats = run_environment(board,
                                                                                                                tiger,
                                                                                                                goat_coord,
@@ -137,8 +133,8 @@ for simulation in range(number_of_simulations):
                                                                                                                eaten_goats,
                                                                                                                tiger_ai,
                                                                                                                goat_ai,
-                                                                                                               avialable_goats)
-            #print("after", board)
+                                                                                                                                                                                                                avialable_goats)
+            print("neural second", board)
         if memory[-1][-1]:
             break
         if len(memory) > batch_size:
