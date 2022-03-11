@@ -55,19 +55,15 @@ class DQNAgent:
 
     def replay(self, batch_size):
         minibatch = random.sample(memory, batch_size)
-        # print(memory)
         for state, action, reward, next_state, done in minibatch:
             if not done:
                 prediction_for_next_state = self.model.predict(np.reshape(next_state, (1, 9)))[0]
-                highest_q_value_bellman_prediction = reward + self.gamma * np.amax(prediction_for_next_state)
+                target_q_value = reward + self.gamma * np.amax(prediction_for_next_state)
             else:
-                highest_q_value_bellman_prediction = reward
-            #print(action)
-            #print(possible_moves.index(action))
+                target_q_value = reward
             action_index = possible_moves.index(action)
-            q_value_nn_prediction = self.model.predict(np.reshape(state, (1, 9)))
-            #print(q_value_nn_prediction[0])
-            q_value_nn_prediction[0][action_index] = highest_q_value_bellman_prediction
+            q_value_nn_prediction = np.amax(self.model.predict(np.reshape(state, (1, 9))))[0]
+            q_value_nn_prediction[0][action_index] = target_q_value
             self.model.fit(np.reshape(state, (1, 9)), q_value_nn_prediction, epochs=1, verbose=0)
             if self.epsilon > self.epsilon_min:
                 self.epsilon *= self.epsilon_decay

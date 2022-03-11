@@ -273,6 +273,8 @@ def tiger_score_check(tiger_ai, eaten_goats, move_is_made, goat_is_present):
     goat_reward = 0
     if move_is_made and not goat_is_present:
         tiger_reward = -10
+    elif not move_is_made:
+        tiger_reward = -30
     if newly_eaten_goats != eaten_goats:
         tiger_reward = 10
         goat_reward = - 10
@@ -300,7 +302,7 @@ def goat_score_check(tiger_ai, board, goat_coord):
         return True, tiger_reward, goat_reward
 
 
-def tiger_move(board, tiger_ai, tiger, goat_coord, goats, q_values):
+def tiger_move(board, tiger_ai, tiger, goat_coord, goats, q_values, state):
     tiger_dx = 0
     tiger_dy = 0
     # print(q_values)
@@ -319,6 +321,8 @@ def tiger_move(board, tiger_ai, tiger, goat_coord, goats, q_values):
         if not move_is_made or not goat_is_present:
             i = 1
             while not move_is_made or not goat_is_present:
+                tiger_reward = -50
+                memory.append((state, action_tiger, tiger_reward, None, False))
                 # print(False)
                 move_q_value = q_values[0][-i]
                 tiger_dx, tiger_dy = possible_moves[np.where(original_q_values == move_q_value)[1][0]]
