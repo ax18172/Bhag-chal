@@ -31,7 +31,7 @@ class DQNAgent:
         self.state_size = state_size
         self.action_size = action_size
         self.memory = deque(maxlen=2000)
-        self.gamma = 0.95
+        self.gamma = 0.5
         self.epsilon = 0.8
         self.epsilon_decay = 0.995
         self.epsilon_min = 0.01
@@ -57,12 +57,13 @@ class DQNAgent:
         minibatch = random.sample(memory, batch_size)
         for state, action, reward, next_state, done in minibatch:
             if not done:
+                #print(next_state)
                 prediction_for_next_state = self.model.predict(np.reshape(next_state, (1, 9)))[0]
                 target_q_value = reward + self.gamma * np.amax(prediction_for_next_state)
             else:
                 target_q_value = reward
             action_index = possible_moves.index(action)
-            q_value_nn_prediction = np.amax(self.model.predict(np.reshape(state, (1, 9))))[0]
+            q_value_nn_prediction = self.model.predict(np.reshape(state, (1, 9)))
             q_value_nn_prediction[0][action_index] = target_q_value
             self.model.fit(np.reshape(state, (1, 9)), q_value_nn_prediction, epochs=1, verbose=0)
             if self.epsilon > self.epsilon_min:

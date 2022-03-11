@@ -321,8 +321,9 @@ def tiger_move(board, tiger_ai, tiger, goat_coord, goats, q_values, state):
         if not move_is_made or not goat_is_present:
             i = 1
             while not move_is_made or not goat_is_present:
+                print(move_is_made)
                 tiger_reward = -50
-                memory.append((state, action_tiger, tiger_reward, None, False))
+                memory.append((state, action_tiger, tiger_reward, state, False))
                 # print(False)
                 move_q_value = q_values[0][-i]
                 tiger_dx, tiger_dy = possible_moves[np.where(original_q_values == move_q_value)[1][0]]
@@ -367,7 +368,7 @@ def run_environment(board, tiger, goat_coord, goats, q_values,
             pass
         else:
             action_tiger, move_is_made, goat_is_present = tiger_move(board, tiger_ai, tiger, goat_coord, goats,
-                                                                     q_values)
+                                                                     q_values,current_state)
             # print(board)
             next_state = board.copy()
             play, tiger_reward, goat_reward, eaten_goats = tiger_score_check(tiger_ai, eaten_goats, move_is_made,
@@ -385,7 +386,7 @@ def run_environment(board, tiger, goat_coord, goats, q_values,
             pass
         else:
             action_tiger, move_is_made, goat_is_present = tiger_move(board, tiger_ai, tiger, goat_coord, goats,
-                                                                     q_values)
+                                                                     q_values,current_state)
 
             # print(board)
             next_state = board.copy()
