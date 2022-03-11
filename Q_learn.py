@@ -62,9 +62,11 @@ class DQNAgent:
                 highest_q_value_bellman_prediction = reward + self.gamma * np.amax(prediction_for_next_state)
             else:
                 highest_q_value_bellman_prediction = reward
-            # print(action)
+            #print(action)
+            #print(possible_moves.index(action))
             action_index = possible_moves.index(action)
             q_value_nn_prediction = self.model.predict(np.reshape(state, (1, 9)))
+            #print(q_value_nn_prediction[0])
             q_value_nn_prediction[0][action_index] = highest_q_value_bellman_prediction
             self.model.fit(np.reshape(state, (1, 9)), q_value_nn_prediction, epochs=1, verbose=0)
             if self.epsilon > self.epsilon_min:
@@ -78,7 +80,7 @@ class DQNAgent:
 
 
 agent = DQNAgent(state_size, action_size_tiger)
-number_of_simulations = 100
+number_of_simulations = 1000
 
 for simulation in range(number_of_simulations):
     board_dimension = 3
@@ -90,9 +92,10 @@ for simulation in range(number_of_simulations):
     tiger = TIGER(2, 2, board)
     tiger_ai = TIGER_AI(tiger)
     goat_ai = GOAT_AI(max_number_of_goats_on_the_board)
-    avialable_goats = max_number_of_goats_on_the_board
+    goat_ai.placing_a_goat(board, goat_coord, goats)
+    avialable_goats = max_number_of_goats_on_the_board - 1
     decision = agent.act_decision()
-    for timestep in range(maximum_number_of_timesteps):
+    for timestep in range(2, maximum_number_of_timesteps, 1):
         # print(board)
         if decision == "random":
             print("normal first", board)
@@ -100,16 +103,15 @@ for simulation in range(number_of_simulations):
                                                                                                                tiger,
                                                                                                                goat_coord,
                                                                                                                goats,
-                                                                                                               False,
-                                                                                                               None,
-                                                                                                               None,
+                                                                                                               [],
                                                                                                                maximum_number_of_timesteps,
                                                                                                                timestep,
                                                                                                                board_dimension,
                                                                                                                eaten_goats,
                                                                                                                tiger_ai,
                                                                                                                goat_ai,
-                                                                                                               avialable_goats)
+                                                                                                               avialable_goats
+                                                                                                               )
             print("normal second", board)
         elif decision == "neural network":
             print("neural first", board)
@@ -117,23 +119,19 @@ for simulation in range(number_of_simulations):
             current_state = board.copy()
             # print(current_state)
             q_values = agent.model.predict(np.reshape(current_state, (1, 9)))
-            move_q_value = int(np.argmax(q_values))
-            tiger_dx, tiger_dy = possible_moves[move_q_value]
-            print(tiger_dx, tiger_dy)
             board, goat_coord, goats, tiger, eaten_goats, tiger_ai, goat_ai, avialable_goats = run_environment(board,
                                                                                                                tiger,
                                                                                                                goat_coord,
                                                                                                                goats,
-                                                                                                               True,
-                                                                                                               tiger_dx,
-                                                                                                               tiger_dy,
+                                                                                                               q_values,
                                                                                                                maximum_number_of_timesteps,
                                                                                                                timestep,
                                                                                                                board_dimension,
                                                                                                                eaten_goats,
                                                                                                                tiger_ai,
                                                                                                                goat_ai,
-                                                                                                                                                                                                                avialable_goats)
+                                                                                                               avialable_goats
+                                                                                                               )
             print("neural second", board)
         if memory[-1][-1]:
             break
