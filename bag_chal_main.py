@@ -64,6 +64,7 @@ def move(pos_x, pos_y, dx, dy, mission, animal, board):
             elif animal == "goat":
                 board[pos_x, pos_y] = 2
             move_is_made = True
+    print("first stage", move_is_made)
     return pos_x, pos_y, move_is_made
 
 
@@ -184,6 +185,7 @@ class TIGER_AI():
                 if goat_is_found:
                     goat_is_present = True
                 self.killed_goats += 1
+        print("medium stage", move_is_made)
         return (dx, dy), move_is_made, goat_is_present
 
     def return_killed_goats(self):
@@ -321,7 +323,7 @@ def tiger_move(board, tiger_ai, tiger, goat_coord, goats, q_values, state):
         if not move_is_made or not goat_is_present:
             i = 1
             while not move_is_made or not goat_is_present:
-                print(move_is_made)
+                print("last stage", move_is_made)
                 tiger_reward = -50
                 memory.append((state, action_tiger, tiger_reward, state, False))
                 # print(False)
