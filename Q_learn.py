@@ -14,9 +14,9 @@ import collections
 from collections import deque
 from bag_chal_main import board
 import random
-from bag_chal_main import run_environment, GOAT_AI, TIGER_AI, TIGER, GOAT, tiger_score_check, goat_score_check, memory, \
+from bag_chal_main import GOAT_AI, TIGER_AI, TIGER, tiger_score_check, goat_score_check, memory, \
  \
-    max_number_of_goats_on_the_board, grid_matrix, eaten_goats
+    max_number_of_goats_on_the_board, goat_move
 
 state_size = np.zeros((3, 3))
 action_size_tiger = 16
@@ -74,7 +74,7 @@ class DQNAgent:
 
 
 agent = DQNAgent(state_size, action_size_tiger)
-number_of_simulations = 1000
+number_of_simulations = 10000
 
 for simulation in range(number_of_simulations):
     board_dimension = 3
@@ -86,48 +86,34 @@ for simulation in range(number_of_simulations):
     tiger = TIGER(2, 2, board)
     tiger_ai = TIGER_AI(tiger)
     goat_ai = GOAT_AI(max_number_of_goats_on_the_board)
-    goat_ai.placing_a_goat(board, goat_coord, goats)
-    avialable_goats = max_number_of_goats_on_the_board - 1
+    avialable_goats = max_number_of_goats_on_the_board
     decision = agent.act_decision()
-    for timestep in range(2, maximum_number_of_timesteps, 1):
-        # print(board)
-        if decision == "random":
-            print("normal first\n", board)
-            board, goat_coord, goats, tiger, eaten_goats, tiger_ai, goat_ai, avialable_goats = run_environment(board,
-                                                                                                               tiger,
-                                                                                                               goat_coord,
-                                                                                                               goats,
-                                                                                                               [],
-                                                                                                               maximum_number_of_timesteps,
-                                                                                                               timestep,
-                                                                                                               board_dimension,
-                                                                                                               eaten_goats,
-                                                                                                               tiger_ai,
-                                                                                                               goat_ai,
-                                                                                                               avialable_goats
-                                                                                                               )
-            print("normal second\n", board)
-        elif decision == "neural network":
-            print("neural first\n", board)
-            # print(board)
-            current_state = board.copy()
-            # print(current_state)
-            q_values = agent.model.predict(np.reshape(current_state, (1, 9)))
-            board, goat_coord, goats, tiger, eaten_goats, tiger_ai, goat_ai, avialable_goats = run_environment(board,
-                                                                                                               tiger,
-                                                                                                               goat_coord,
-                                                                                                               goats,
-                                                                                                               q_values,
-                                                                                                               maximum_number_of_timesteps,
-                                                                                                               timestep,
-                                                                                                               board_dimension,
-                                                                                                               eaten_goats,
-                                                                                                               tiger_ai,
-                                                                                                               goat_ai,
-                                                                                                               avialable_goats
-                                                                                                               )
-            print("neural second\n", board)
+    for timestep in range(maximum_number_of_timesteps):
+        current_state = np.zeros((board_dimension, board_dimension))
+        action = (0, 0)
+        next_state = np.zeros((board_dimension, board_dimension))
+        if avialable_goats > 0:
+            board, goats, goat_coord = goat_move(board, goat_ai, goats, "placing", goat_coord)
+            avialable_goats -= 1
+        else:
+            board, goats, goat_coord = goat_move(board, goat_ai, goats, "moving", goat_coord)
+        print("goat is placed\n", board)
+        done, tiger_reward = goat_score_check(tiger_ai, board, goat_coord)
+        if not done:
+            eaten_goats = eaten_goats
+            if decision == "random":
+                current_state, next_state, goat_coord, goats, action = tiger_ai.make_a_move([], board, goat_coord,
+                                                                                            goats)
+                print("random tiger moved\n", board)
+            elif decision == "neural network":
+                current_state = board.copy()
+                q_values = agent.model.predict(np.reshape(current_state, (1, 9)))
+                current_state, next_state, goat_coord, goats, action = tiger_ai.make_a_move(q_values, board, goat_coord,
+                                                                                            goats)
+                print("neural tiger moved\n", board, "q\n", q_values)
+            done, tiger_reward, eaten_goats = tiger_score_check(tiger_ai, eaten_goats)
+            memory.append((current_state, action, tiger_reward, next_state, done))
+        else:
+            break
         if memory[-1][-1]:
             break
-        if len(memory) > batch_size:
-            agent.replay(batch_size)

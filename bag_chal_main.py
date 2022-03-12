@@ -1,6 +1,7 @@
 import numpy as np
 import random
 from collections import deque
+import math
 
 possible_moves = [(0, 1), (1, 0), (0, -1), (-1, 0), (1, 1), (1, -1), (-1, 1), (-1, -1), (0, 2), (2, 0), (0, -2),
                   (-2, 0), (2, 2), (2, -2),
@@ -174,7 +175,8 @@ class TIGER_AI():
                     probability_matrix_tiger[probability_index] = 0
             probability_matrix_tiger = np.reshape(probability_matrix_tiger, (3, 3))
             probability_matrix_tiger = np.multiply(q_values, probability_matrix_tiger)
-        highest_value = np.amax(probability_matrix_tiger)
+            #print("neural probability matrix\n", probability_matrix_tiger)
+        highest_value = np.max(probability_matrix_tiger[np.nonzero(probability_matrix_tiger)])
         index_x, index_y = np.where(probability_matrix_tiger == highest_value)
         dx, dy = index_x[0] - self.Tiger.return_position()[0], index_y[0] - self.Tiger.return_position()[1]
         if abs(dx) < 2 and abs(dy) < 2:
@@ -262,8 +264,10 @@ def tiger_score_check(tiger_ai, eaten_goats):
     newly_eaten_goats = tiger_ai.return_killed_goats()
     tiger_reward = 0
     if newly_eaten_goats != eaten_goats:
-        tiger_reward = 10
+        tiger_reward = 100
         eaten_goats = newly_eaten_goats
+    else:
+        tiger_reward = -10
     if eaten_goats >= goats_to_win_the_game:
         tiger_reward = 1000
         return True, tiger_reward, eaten_goats
@@ -396,12 +400,12 @@ for episode in range(episodes):
         avialable_goats -= 1
     else:
         board, goats, goat_coord = goat_move(board, goat_ai, goats, "moving", goat_coord)
-    print(board)
     done, tiger_reward = goat_score_check(tiger_ai, board, goat_coord)
     if not done:
         current_state, next_state, goat_coord, goats, action = tiger_ai.make_a_move([], board, goat_coord, goats)
         done, tiger_reward, eaten_goats = tiger_score_check(tiger_ai, eaten_goats)
         memory.append((current_state, action, tiger_reward, next_state, done))
-    print(board)
+    else:
+        break
     if memory[-1][-1]:
         break
