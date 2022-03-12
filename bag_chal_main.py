@@ -64,7 +64,7 @@ def move(pos_x, pos_y, dx, dy, mission, animal, board):
             elif animal == "goat":
                 board[pos_x, pos_y] = 2
             move_is_made = True
-    print("first stage", move_is_made)
+    # print("first stage", move_is_made)
     return pos_x, pos_y, move_is_made
 
 
@@ -160,33 +160,32 @@ class TIGER_AI():
             goat_present = True
         return goat_present
 
-    def make_a_move(self, dx_nn, dy_nn, neural_network_inputs, board, goat_coord, goats):
-        move_is_made = False
-        goat_is_present = False
-        if neural_network_inputs:
-            dx, dy = dx_nn, dy_nn
-        else:
-            possible_moves = self.Tiger.probabilities_matrix(board, goat_coord)
-            highest_value = np.amax(possible_moves)
-            index_x, index_y = np.where(possible_moves == highest_value)
-            dx, dy = index_x[0] - self.Tiger.return_position()[0], index_y[0] - self.Tiger.return_position()[1]
+    def make_a_move(self, q_values, board, goat_coord, goats):
+        current_state = board.copy()
+        probability_matrix_tiger = self.Tiger.probabilities_matrix(board, goat_coord)
+        if q_values != []:
+            q_values = np.reshape(q_values, (3, 3))
+            probability_matrix_tiger = np.reshape(probability_matrix_tiger, (9,))
+            for probability in probability_matrix_tiger:
+                probability_index = np.where(probability_matrix_tiger == probability)
+                if probability != 0 and probability > 0:
+                    probability_matrix_tiger[probability_index] = 1
+                else:
+                    probability_matrix_tiger[probability_index] = 0
+            probability_matrix_tiger = np.reshape(probability_matrix_tiger, (3, 3))
+            probability_matrix_tiger = np.multiply(q_values, probability_matrix_tiger)
+        highest_value = np.amax(probability_matrix_tiger)
+        index_x, index_y = np.where(probability_matrix_tiger == highest_value)
+        dx, dy = index_x[0] - self.Tiger.return_position()[0], index_y[0] - self.Tiger.return_position()[1]
         if abs(dx) < 2 and abs(dy) < 2:
-            pos_x, pos_y, tiger_moved = self.Tiger.move_tiger(dx, dy, "move", board)
-            if tiger_moved:
-                move_is_made = True
-                goat_is_present = True
+            self.Tiger.move_tiger(dx, dy, "move", board)
         else:
-            pos_x, pos_y, tiger_moved = self.Tiger.move_tiger(dx, dy, "eat", board)
-            # print(tiger_moved)
-            if tiger_moved:
-                move_is_made = True
-                goat_is_found = self.eat(self.Tiger.return_position()[0] - int(0.5 * dx),
-                                         self.Tiger.return_position()[1] - int(0.5 * dy), board, goat_coord, goats)
-                if goat_is_found:
-                    goat_is_present = True
-                self.killed_goats += 1
-        print("medium stage", move_is_made)
-        return (dx, dy), move_is_made, goat_is_present
+            self.Tiger.move_tiger(dx, dy, "eat", board)
+            self.eat(self.Tiger.return_position()[0] - int(0.5 * dx),
+                     self.Tiger.return_position()[1] - int(0.5 * dy), board, goat_coord, goats)
+            self.killed_goats += 1
+        next_state = board.copy()
+        return current_state, next_state, goat_coord, goats, self.Tiger.return_position()
 
     def return_killed_goats(self):
         return self.killed_goats
@@ -269,42 +268,33 @@ class GOAT_AI:
             return 1, index_x, index_y, dx, dy
 
 
-def tiger_score_check(tiger_ai, eaten_goats, move_is_made, goat_is_present):
+def tiger_score_check(tiger_ai, eaten_goats):
     newly_eaten_goats = tiger_ai.return_killed_goats()
     tiger_reward = 0
-    goat_reward = 0
-    if move_is_made and not goat_is_present:
-        tiger_reward = -10
-    elif not move_is_made:
-        tiger_reward = -30
     if newly_eaten_goats != eaten_goats:
         tiger_reward = 10
-        goat_reward = - 10
         eaten_goats = newly_eaten_goats
     if eaten_goats >= goats_to_win_the_game:
         tiger_reward = 1000
-        goat_reward = - 1000
-        return False, tiger_reward, goat_reward, eaten_goats
+        return False, tiger_reward, eaten_goats
     else:
-        return True, tiger_reward, goat_reward, eaten_goats
+        return True, tiger_reward, eaten_goats
 
 
 def goat_score_check(tiger_ai, board, goat_coord):
     tiger_reward = 0
-    goat_reward = 0
     movement_matrix = tiger_ai.return_tiger_probability_matrix(board, goat_coord)
     index_x, index_y = tiger_ai.return_tiger_position()
     test_matrix = np.zeros((3, 3))
     test_matrix[index_x, index_y] = -1
     if np.all(movement_matrix == test_matrix):
         tiger_reward = -1000
-        goat_reward = 1000
-        return False, tiger_reward, goat_reward
+        return False, tiger_reward
     else:
-        return True, tiger_reward, goat_reward
+        return True, tiger_reward
 
 
-def tiger_move(board, tiger_ai, tiger, goat_coord, goats, q_values, state):
+"""def tiger_move(board, tiger_ai, goat_coord, goats, q_values):
     tiger_dx = 0
     tiger_dy = 0
     # print(q_values)
@@ -312,30 +302,9 @@ def tiger_move(board, tiger_ai, tiger, goat_coord, goats, q_values, state):
         action_tiger, move_is_made, goat_is_present = tiger_ai.make_a_move(None, None, False, board, goat_coord,
                                                                            goats)
     else:
-        original_q_values = q_values.copy()
-        q_values.sort()
-        move_q_value = q_values[0][-1]
-        # print(move_q_value)
-        tiger_dx, tiger_dy = possible_moves[np.where(original_q_values == move_q_value)[1][0]]
-        action_tiger, move_is_made, goat_is_present = tiger_ai.make_a_move(tiger_dx, tiger_dy, True, board,
-                                                                           goat_coord, goats)
-        print(tiger_dx, tiger_dy)
-        if not move_is_made or not goat_is_present:
-            i = 1
-            while not move_is_made or not goat_is_present:
-                print("last stage", move_is_made)
-                tiger_reward = -50
-                memory.append((state, action_tiger, tiger_reward, state, False))
-                # print(False)
-                move_q_value = q_values[0][-i]
-                tiger_dx, tiger_dy = possible_moves[np.where(original_q_values == move_q_value)[1][0]]
-                action_tiger, move_is_made, goat_is_present = tiger_ai.make_a_move(tiger_dx, tiger_dy, True,
-                                                                                   board,
-                                                                                   goat_coord, goats)
-                print(tiger_dx, tiger_dy)
-                i += 1
-    # print(tiger_dx,tiger_dy)
-    return action_tiger, move_is_made, goat_is_present
+        probability_matrix_tiger = tiger_ai.return_tiger_probability_matrix(board, goat_coord)
+        np.reshape(q_values, (3, 3))
+        new_probability_matrix = np.multiply(q_values, probability_matrix_tiger)"""
 
 
 def goat_move(board, goat_ai, goats, type_of_act, goat_coord):
@@ -344,10 +313,11 @@ def goat_move(board, goat_ai, goats, type_of_act, goat_coord):
     elif type_of_act == "moving":
         goat = goat_ai.picking_a_goat_to_move(board, goats, goat_coord)
         goat_ai.make_a_move(goat, board, goat_coord)
+    return board, goats, goat_coord
 
 
-def run_environment(board, tiger, goat_coord, goats, q_values,
-                    maximum_number_of_episodes, episode, board_dimension, eaten_goats, tiger_ai, goat_ai,
+"""def run_environment(board, tiger, goat_coord, goats, q_values,
+                    maximum_number_of_episodes, episode,eaten_goats, tiger_ai, goat_ai,
                     avialable_goats):
     done = False
     if board is None:
@@ -363,45 +333,43 @@ def run_environment(board, tiger, goat_coord, goats, q_values,
             if episode != 1:
                 goat_move(board, goat_ai, goats, "placing", goat_coord)
                 avialable_goats -= 1
-        # print(board)
+        print("goat is placed", board)
         current_state = board.copy()
         play, tiger_reward, goat_reward = goat_score_check(tiger_ai, board, goat_coord)
         if not play:
             pass
         else:
-            action_tiger, move_is_made, goat_is_present = tiger_move(board, tiger_ai, tiger, goat_coord, goats,
-                                                                     q_values,current_state)
-            # print(board)
+            tiger_ai.make_a_move(q_values, board, goat_coord, goats)
+            print("tiger moved", board)
             next_state = board.copy()
-            play, tiger_reward, goat_reward, eaten_goats = tiger_score_check(tiger_ai, eaten_goats, move_is_made,
-                                                                             goat_is_present)
-            if not play:
-                done = True
-            memory.append((current_state, action_tiger, tiger_reward, next_state, done))
-
+            play, tiger_reward, goat_reward, eaten_goats = tiger_score_check(tiger_ai, eaten_goats)
+            done = True
+            memory.append((current_state, tiger_ai.return_tiger_position(), tiger_reward, next_state, done))
     else:
         goat_move(board, goat_ai, goats, "moving", goat_coord)
-        # print(board)
+        print("goat moved", board)
         current_state = board.copy()
         play, tiger_reward, goat_reward = goat_score_check(tiger_ai, board, goat_coord)
+    if not play:
+        pass
+    else:
         if not play:
             pass
         else:
-            action_tiger, move_is_made, goat_is_present = tiger_move(board, tiger_ai, tiger, goat_coord, goats,
-                                                                     q_values,current_state)
-
-            # print(board)
+            tiger_ai.make_a_move(q_values, board, goat_coord, goats)
+            print("tiger moved", board)
             next_state = board.copy()
-            play, tiger_reward, goat_reward, eaten_goats = tiger_score_check(tiger_ai, eaten_goats, move_is_made,
-                                                                             goat_is_present)
-            if not play:
-                done = True
-                memory.append((current_state, action_tiger, tiger_reward, next_state, done))
-            else:
-                memory.append((current_state, action_tiger, tiger_reward, next_state, done))
-            if episode >= maximum_number_of_episodes:
-                board = np.zeros((3, 3))
-                # print(episode)
+            play, tiger_reward, goat_reward, eaten_goats = tiger_score_check(tiger_ai, eaten_goats)
+            done = True
+            memory.append((current_state, tiger_ai.return_tiger_position(), tiger_reward, next_state, done))
+        next_state = board.copy()
+        play, tiger_reward, goat_reward, eaten_goats = tiger_score_check(tiger_ai, eaten_goats)
+        if not play:
+            done = True
+        memory.append((current_state, tiger_ai.return_tiger_position(), tiger_reward, next_state, done))
+    if episode >= maximum_number_of_episodes:
+        board = np.zeros((3, 3))
+        # print(episode)
     return board, goat_coord, goats, tiger, eaten_goats, tiger_ai, goat_ai, avialable_goats
 
 
@@ -421,5 +389,27 @@ for i in range(2, 20, 1):
                                                                                                        tiger_ai,
                                                                                                        goat_ai,
                                                                                                        avialable_goats)
+    if memory[-1][-1]:
+        break"""
+board = np.zeros((3, 3))
+tiger = TIGER(2, 2, board)
+tiger_ai = TIGER_AI(tiger)
+goat_ai = GOAT_AI(max_number_of_goats_on_the_board)
+episodes = 20
+avialable_goats = 7
+goat_coord = []
+goats = []
+eaten_goats = 0
+for episode in range(episodes):
+    if episode < max_number_of_goats_on_the_board:
+        board, goats, goat_coord = goat_move(board, goat_ai, [], "moving", [])
+        avialable_goats -= 1
+    else:
+        board, goats, goat_coord = goat_move(board, goat_ai, [], "moving", [])
+    done, tiger_reward = goat_score_check(tiger_ai, board, goat_coord)
+    if not done:
+        current_state, next_state, goat_coord, goats, action = tiger_ai.make_a_move([], board, goat_coord, goats)
+        done, tiger_reward, eaten_goats = tiger_score_check(tiger_ai, eaten_goats)
+        memory.append((current_state, action, tiger_reward, next_state, done))
     if memory[-1][-1]:
         break
