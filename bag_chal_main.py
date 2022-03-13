@@ -103,12 +103,14 @@ class TIGER:
 
     def probabilities_matrix(self, board, goat_coord):
         probability_matrix = probability_matrix_calculation(self.pos_x, self.pos_y, board)
+        test_probability_matrix = probability_matrix.copy()
         directions = self.scan_for_food(goat_coord)
         for vector in directions:
             if [self.pos_x + vector[0], self.pos_y + vector[1]] in grid_matrix and board[self.pos_x + vector[0],
                                                                                          self.pos_y + vector[1]] == 0:
                 probability_matrix[self.pos_x + vector[0], self.pos_y + vector[1]] = random.random()
-        return probability_matrix
+                test_probability_matrix[self.pos_x + vector[0], self.pos_y + vector[1]] = random.randint(1, 3)
+        return probability_matrix, test_probability_matrix
 
 
 """Goat class is identical to tiger in lots of aspects, just simpler"""
@@ -163,7 +165,7 @@ class TIGER_AI():
 
     def make_a_move(self, q_values, board, goat_coord, goats):
         current_state = board.copy()
-        probability_matrix_tiger = self.Tiger.probabilities_matrix(board, goat_coord)
+        probability_matrix_tiger, test_probability_matrix = self.Tiger.probabilities_matrix(board, goat_coord)
         if q_values != []:
             q_values = np.reshape(q_values, (3, 3))
             probability_matrix_tiger = np.reshape(probability_matrix_tiger, (9,))
@@ -175,7 +177,7 @@ class TIGER_AI():
                     probability_matrix_tiger[probability_index] = 0
             probability_matrix_tiger = np.reshape(probability_matrix_tiger, (3, 3))
             probability_matrix_tiger = np.multiply(q_values, probability_matrix_tiger)
-            #print("neural probability matrix\n", probability_matrix_tiger)
+            # print("neural probability matrix\n", probability_matrix_tiger)
         highest_value = np.max(probability_matrix_tiger[np.nonzero(probability_matrix_tiger)])
         index_x, index_y = np.where(probability_matrix_tiger == highest_value)
         dx, dy = index_x[0] - self.Tiger.return_position()[0], index_y[0] - self.Tiger.return_position()[1]
@@ -187,7 +189,7 @@ class TIGER_AI():
                      self.Tiger.return_position()[1] - int(0.5 * dy), board, goat_coord, goats)
             self.killed_goats += 1
         next_state = board.copy()
-        return current_state, next_state, goat_coord, goats, self.Tiger.return_position()
+        return current_state, next_state, goat_coord, goats, self.Tiger.return_position(), test_probability_matrix
 
     def return_killed_goats(self):
         return self.killed_goats
@@ -288,7 +290,6 @@ def goat_score_check(tiger_ai, board, goat_coord):
         return False, tiger_reward
 
 
-
 def goat_move(board, goat_ai, goats, type_of_act, goat_coord):
     if type_of_act == "placing":
         goat_ai.placing_a_goat(board, goat_coord, goats)
@@ -315,10 +316,12 @@ for episode in range(episodes):
         board, goats, goat_coord = goat_move(board, goat_ai, goats, "moving", goat_coord)
     done, tiger_reward = goat_score_check(tiger_ai, board, goat_coord)
     if not done:
-        current_state, next_state, goat_coord, goats, action = tiger_ai.make_a_move([], board, goat_coord, goats)
+        current_state, next_state, goat_coord, goats, action, test_probability_matrix = tiger_ai.make_a_move([], board,
+                                                                                                             goat_coord,
+                                                                                                             goats)
         done, tiger_reward, eaten_goats = tiger_score_check(tiger_ai, eaten_goats)
-        memory.append((current_state, action, tiger_reward, next_state, done))
+        memory.append((current_state, action, tiger_reward, next_state, done, test_probability_matrix))
     else:
         break
-    if memory[-1][-1]:
+    if memory[-1][-2]:
         break

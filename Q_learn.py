@@ -8,6 +8,7 @@ from sklearn.model_selection import train_test_split
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Dropout, Conv2D
 from tensorflow.keras.models import load_model
+from matplotlib import pyplot as plt
 import io
 import os
 import collections
@@ -21,6 +22,34 @@ from bag_chal_main import GOAT_AI, TIGER_AI, TIGER, tiger_score_check, goat_scor
 state_size = np.zeros((3, 3))
 action_size_tiger = 16
 batch_size = 32
+Q_values = []
+Maximum_Q_values = []
+number_of_timesteps_to_win = []
+number_of_timesteps_to_lose = []
+start_point = 0
+end_point = 0
+
+
+def memory_scan(start_point, end_point):
+    counter = 0
+    for mem in range(start_point, end_point, 1):
+        if memory[mem][-2]:
+            game_iteration = mem + 1
+            game_has_ended = False
+            while not game_has_ended:
+                result = memory[game_iteration][-2]
+                if not result:
+                    counter += 1
+                    game_iteration += 1
+                else:
+                    if memory[game_iteration][2] == 1000:
+                        number_of_timesteps_to_win.append(counter)
+                    elif memory[game_iteration][2] == -1000:
+                        number_of_timesteps_to_lose.append(counter)
+                    counter = 0
+                game_has_ended = True
+
+        return end_point
 
 
 class DQNAgent:
@@ -28,7 +57,7 @@ class DQNAgent:
         self.state_size = state_size
         self.action_size = action_size
         self.memory = deque(maxlen=2000)
-        self.gamma = 0.8
+        self.gamma = 0.6
         self.epsilon = 0.8
         self.epsilon_decay = 0.995
         self.epsilon_min = 0.01
@@ -54,9 +83,9 @@ class DQNAgent:
 
     def replay(self, batch_size):
         minibatch = random.sample(memory, batch_size)
-        for state, action, reward, next_state, done in minibatch:
+        for state, action, reward, next_state, done, test_probability_matrix in minibatch:
             if not done:
-                print("reward: ", reward)
+                # print("reward: ", reward)
                 prediction_for_next_state = self.target_model.predict(np.reshape(next_state, (1, 9)))[0]
                 target_q_value = reward + self.gamma * np.amax(prediction_for_next_state)
             else:
@@ -89,6 +118,9 @@ number_of_simulations = 10000
 for simulation in range(number_of_simulations):
     print("simulation number: ", simulation, "/",
           number_of_simulations)
+    # print("memory:\n", memory)
+    # print("Q_values test:\n", Q_values)
+    # print("Maximum Q_values:\n", Maximum_Q_values)
     board_dimension = 3
     board = np.zeros((board_dimension, board_dimension))
     goat_coord = []
@@ -109,27 +141,48 @@ for simulation in range(number_of_simulations):
             avialable_goats -= 1
         else:
             board, goats, goat_coord = goat_move(board, goat_ai, goats, "moving", goat_coord)
-        print("goat is placed\n", board)
+        # print("goat is placed\n", board)
         done, tiger_reward = goat_score_check(tiger_ai, board, goat_coord)
         if not done:
             eaten_goats = eaten_goats
             if decision == "random":
-                current_state, next_state, goat_coord, goats, action = tiger_ai.make_a_move([], board, goat_coord,
-                                                                                            goats)
+                current_state, next_state, goat_coord, goats, action, test_probability_matrix = tiger_ai.make_a_move([],
+                                                                                                                     board,
+                                                                                                                     goat_coord,
+                                                                                                                     goats)
                 # print("random tiger moved\n", board)
             elif decision == "neural network":
                 current_state = board.copy()
                 q_values = agent.target_model.predict(np.reshape(current_state, (1, 9)))
-                print("Q-values:\n", q_values)
-                current_state, next_state, goat_coord, goats, action = tiger_ai.make_a_move(q_values, board, goat_coord,
-                                                                                            goats)
-                print("neural tiger moved\n", board)
+                # print("Q-values:\n", q_values)
+                current_state, next_state, goat_coord, goats, action, test_probability_matrix = tiger_ai.make_a_move(
+                    q_values, board, goat_coord,
+                    goats)
+                # print("neural tiger moved\n", board)
+                if np.amax(test_probability_matrix) > 1:
+                    test_probability_matrix = np.reshape(test_probability_matrix, (1, 9))
+                    for probability in test_probability_matrix[0]:
+                        if probability > 1:
+                            index = np.where(test_probability_matrix == probability)
+                            q_values = q_values[0]
+                            print(index[1][0])
+                            print(q_values)
+                            q_value = q_values[index[1][0]]
+                            max_q_value = np.amax(q_values)
+                            Q_values.append(q_value)
+                            Maximum_Q_values.append(max_q_value)
             done, tiger_reward, eaten_goats = tiger_score_check(tiger_ai, eaten_goats)
-            memory.append((current_state, action, tiger_reward, next_state, done))
+            memory.append((current_state, action, tiger_reward, next_state, done, test_probability_matrix))
+
         else:
             break
-        if memory[-1][-1]:
+        if memory[-1][-2]:
             break
         if len(memory) > batch_size:
             agent.replay(batch_size)
-            agent.target_train()
+            if len(memory) % batch_size == 0:
+                agent.target_train()
+                end_point = memory_scan(start_point, end_point)
+                agent.save("trial-{}.model".format(len(memory)))
+                print("won", number_of_timesteps_to_win)
+                print("lost", number_of_timesteps_to_lose)
