@@ -27,12 +27,12 @@ Maximum_Q_values = []
 number_of_timesteps_to_win = []
 number_of_timesteps_to_lose = []
 start_point = 0
-end_point = 0
 
 
-def memory_scan(start_point, end_point):
+
+def memory_scan(start_point, batch_size):
     counter = 0
-    for mem in range(start_point, end_point, 1):
+    for mem in range(start_point, start_point+batch_size, 1):
         if memory[mem][-2]:
             game_iteration = mem + 1
             game_has_ended = False
@@ -49,7 +49,7 @@ def memory_scan(start_point, end_point):
                     counter = 0
                 game_has_ended = True
 
-        return end_point
+        return start_point+batch_size
 
 
 class DQNAgent:
@@ -113,14 +113,14 @@ class DQNAgent:
 
 
 agent = DQNAgent(state_size, action_size_tiger)
-number_of_simulations = 10000
+number_of_simulations = 10
 
 for simulation in range(number_of_simulations):
     print("simulation number: ", simulation, "/",
           number_of_simulations)
     # print("memory:\n", memory)
-    # print("Q_values test:\n", Q_values)
-    # print("Maximum Q_values:\n", Maximum_Q_values)
+    print("Q_values test:\n", Q_values)
+    print("Maximum Q_values:\n", Maximum_Q_values)
     board_dimension = 3
     board = np.zeros((board_dimension, board_dimension))
     goat_coord = []
@@ -165,8 +165,8 @@ for simulation in range(number_of_simulations):
                         if probability > 1:
                             index = np.where(test_probability_matrix == probability)
                             q_values = q_values[0]
-                            print(index[1][0])
-                            print(q_values)
+                            print("index ", index[1][0])
+                            print("q values ", q_values)
                             q_value = q_values[index[1][0]]
                             max_q_value = np.amax(q_values)
                             Q_values.append(q_value)
@@ -182,7 +182,7 @@ for simulation in range(number_of_simulations):
             agent.replay(batch_size)
             if len(memory) % batch_size == 0:
                 agent.target_train()
-                end_point = memory_scan(start_point, end_point)
+                start_point = memory_scan(start_point, batch_size)
                 agent.save("trial-{}.model".format(len(memory)))
                 print("won", number_of_timesteps_to_win)
                 print("lost", number_of_timesteps_to_lose)
