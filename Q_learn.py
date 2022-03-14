@@ -29,10 +29,9 @@ number_of_timesteps_to_lose = []
 start_point = 0
 
 
-
 def memory_scan(start_point, batch_size):
     counter = 0
-    for mem in range(start_point, start_point+batch_size, 1):
+    for mem in range(start_point, start_point + batch_size, 1):
         if memory[mem][-2]:
             game_iteration = mem + 1
             game_has_ended = False
@@ -49,7 +48,7 @@ def memory_scan(start_point, batch_size):
                     counter = 0
                 game_has_ended = True
 
-        return start_point+batch_size
+        return start_point + batch_size
 
 
 class DQNAgent:
@@ -164,7 +163,8 @@ for simulation in range(number_of_simulations):
                     for probability in test_probability_matrix[0]:
                         if probability > 1:
                             index = np.where(test_probability_matrix == probability)
-                            q_values = q_values[0]
+                            q_values_array = q_values.copy()
+                            q_values_list = q_values_array[0]
                             print("index ", index[1][0])
                             print("q values ", q_values)
                             q_value = q_values[index[1][0]]
@@ -186,3 +186,10 @@ for simulation in range(number_of_simulations):
                 agent.save("trial-{}.model".format(len(memory)))
                 print("won", number_of_timesteps_to_win)
                 print("lost", number_of_timesteps_to_lose)
+
+
+def plotting_difference(list1, list2):
+    differences = []
+    for i in range(len(list1)):
+        diff = list1[i] - list2[i]
+    return differences
