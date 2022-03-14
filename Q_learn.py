@@ -22,7 +22,7 @@ from bag_chal_main import GOAT_AI, TIGER_AI, TIGER, tiger_score_check, goat_scor
 
 state_size = np.zeros((3, 3))
 action_size_tiger = 16
-batch_size = 10
+batch_size = 32
 Q_values = []
 Maximum_Q_values = []
 number_of_timesteps_to_win = []
@@ -137,7 +137,7 @@ class DQNAgent:
 
 
 agent = DQNAgent(state_size, action_size_tiger)
-number_of_simulations = 13
+number_of_simulations = 705
 
 for simulation in range(number_of_simulations):
     print("simulation number: ", simulation, "/",
@@ -166,6 +166,7 @@ for simulation in range(number_of_simulations):
                             "iterations", "number of moves", 'win_steps.pdf')
         plotting_difference(number_of_timesteps_to_lose, None, False, "steps it takes for the tiger to lose",
                             "iterations", "number of moves", "lose_steps.pdf")
+        #print('time=', sum(times_per_simulation))
 
     for timestep in range(maximum_number_of_timesteps):
         current_state = np.zeros((board_dimension, board_dimension))
@@ -224,3 +225,4 @@ for simulation in range(number_of_simulations):
                 agent.save("trial-{}.model".format(len(memory)))
                 print("won", number_of_timesteps_to_win)
                 print("lost", number_of_timesteps_to_lose)
+#print('time = ',sum(times_per_simulation))
