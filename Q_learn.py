@@ -33,11 +33,15 @@ start_point = 0
 
 def memory_scan(start_point, batch_size):
     counter = 0
+    result = 0
+    game_iteration = 0
     for mem in range(start_point, start_point + batch_size, 1):
         if memory[mem][-2]:
             game_iteration = mem + 1
             game_has_ended = False
             while not game_has_ended:
+                if game_iteration >= len(memory):
+                    break
                 result = memory[game_iteration][-2]
                 if not result:
                     counter += 1
@@ -50,21 +54,27 @@ def memory_scan(start_point, batch_size):
                     counter = 0
                     game_has_ended = True
     return start_point + batch_size
-        #return start_point + batch_size
-def plotting_difference(list1, list2):
+    # return start_point + batch_size
+
+
+def plotting_difference(list1, list2, plotting_differences, title, x_axis, y_axis, name):
     differences = []
     print(list1)
-    for i in range(len(list1)):
-        diff = list1[i] - list2[i]
-        differences.append(diff)
+    if plotting_differences:
+        for i in range(len(list1)):
+            diff = list1[i] - list2[i]
+            differences.append(diff)
+    else:
+        differences = list1
     plt.plot(differences)
-    plt.title('Graph showing difference between maximum Q-value \n and Q value of eating a goat')
-    plt.xlabel('xAxis name')
-    plt.ylabel('yAxis name')
-    plt.savefig('line_plot.pdf')
+    plt.title(title)
+    plt.xlabel(x_axis)
+    plt.ylabel(y_axis)
+    plt.savefig(name)
     plt.show()
-    
+
     return differences
+
 
 class DQNAgent:
     def __init__(self, state_size, action_size):
@@ -133,13 +143,13 @@ for simulation in range(number_of_simulations):
     print("simulation number: ", simulation, "/",
           number_of_simulations)
     # print("memory:\n", memory)
-    print("Q_values test:\n", Q_values)
-    print("Maximum Q_values:\n", Maximum_Q_values)
+    # print("Q_values test:\n", Q_values)
+    # print("Maximum Q_values:\n", Maximum_Q_values)
     board_dimension = 3
     board = np.zeros((board_dimension, board_dimension))
     goat_coord = []
     goats = []
-    maximum_number_of_timesteps = 30
+    maximum_number_of_timesteps = 20
     eaten_goats = 0
     tiger = TIGER(2, 2, board)
     tiger_ai = TIGER_AI(tiger)
@@ -147,6 +157,16 @@ for simulation in range(number_of_simulations):
     avialable_goats = max_number_of_goats_on_the_board
     decision = agent.act_decision()
     times_per_simulation.append(time.process_time)
+    if (simulation + 1) % 100 == 0:
+        plotting_difference(Maximum_Q_values, Q_values, True,
+                            'Graph showing difference between maximum Q-value \n and Q value of eating a goat',
+                            'number of cases where the goat can be eaten', 'difference between Q-values',
+                            'line_plot.pdf')
+        plotting_difference(number_of_timesteps_to_win, None, False, "steps it takes for the tiger to win",
+                            "iterations", "number of moves", 'win_steps.pdf')
+        plotting_difference(number_of_timesteps_to_lose, None, False, "steps it takes for the tiger to lose",
+                            "iterations", "number of moves", "lose_steps.pdf")
+
     for timestep in range(maximum_number_of_timesteps):
         current_state = np.zeros((board_dimension, board_dimension))
         action = (0, 0)
@@ -156,7 +176,7 @@ for simulation in range(number_of_simulations):
             avialable_goats -= 1
         else:
             board, goats, goat_coord = goat_move(board, goat_ai, goats, "moving", goat_coord)
-        print("goat is placed\n", board)
+        # print("goat is placed\n", board)
         done, tiger_reward = goat_score_check(tiger_ai, board, goat_coord)
         if not done:
             eaten_goats = eaten_goats
@@ -165,26 +185,26 @@ for simulation in range(number_of_simulations):
                                                                                                                      board,
                                                                                                                      goat_coord,
                                                                                                                      goats)
-                #print("random tiger moved\n", board)
+                # print("random tiger moved\n", board)
             elif decision == "neural network":
                 current_state = board.copy()
                 q_values = agent.target_model.predict(np.reshape(current_state, (1, 9)))
-                print("Q-values:\n", q_values)
+                # print("Q-values:\n", q_values)
                 current_state, next_state, goat_coord, goats, action, test_probability_matrix = tiger_ai.make_a_move(
                     q_values, board, goat_coord,
                     goats)
-                print("neural tiger moved\n", board)
+                # print("neural tiger moved\n", board)
                 if np.amax(test_probability_matrix) > 1:
                     test_probability_matrix = np.reshape(test_probability_matrix, (1, 9))
                     for probability in test_probability_matrix[0]:
                         if probability > 1:
                             index = np.where(test_probability_matrix == probability)
-                            #q_values_array = q_values.copy()
-                            #print('array',q_values_array)
-                            #print('list',q_values_list)
-                            print("index ", index[1][0])
-                            print("q values ", q_values)
-                            q_value = q_values[0,index[1][0]]
+                            # q_values_array = q_values.copy()
+                            # print('array',q_values_array)
+                            # print('list',q_values_list)
+                            # print("index ", index[1][0])
+                            # print("q values ", q_values)
+                            q_value = q_values[0, index[1][0]]
                             max_q_value = np.amax(q_values)
                             Q_values.append(q_value)
                             Maximum_Q_values.append(max_q_value)
@@ -198,14 +218,9 @@ for simulation in range(number_of_simulations):
             break
         if len(memory) > batch_size:
             agent.replay(batch_size)
-            if len(memory) % batch_size == 0:
+            if (len(memory) + 1) % batch_size == 0:
                 agent.target_train()
-                start_point = memory_scan(start_point, batch_size)
+                start_point = memory_scan(start_point, 15)
                 agent.save("trial-{}.model".format(len(memory)))
                 print("won", number_of_timesteps_to_win)
                 print("lost", number_of_timesteps_to_lose)
-
-plotting_difference(Maximum_Q_values, Q_values)
-    
-
-
