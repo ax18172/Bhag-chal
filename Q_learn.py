@@ -112,7 +112,7 @@ class DQNAgent:
 
 
 agent = DQNAgent(state_size, action_size_tiger)
-number_of_simulations = 10
+number_of_simulations = 33
 
 for simulation in range(number_of_simulations):
     print("simulation number: ", simulation, "/",
@@ -163,11 +163,12 @@ for simulation in range(number_of_simulations):
                     for probability in test_probability_matrix[0]:
                         if probability > 1:
                             index = np.where(test_probability_matrix == probability)
-                            q_values_array = q_values.copy()
-                            q_values_list = q_values_array[0]
+                            #q_values_array = q_values.copy()
+                            #print('array',q_values_array)
+                            #print('list',q_values_list)
                             print("index ", index[1][0])
                             print("q values ", q_values)
-                            q_value = q_values[index[1][0]]
+                            q_value = q_values[0,index[1][0]]
                             max_q_value = np.amax(q_values)
                             Q_values.append(q_value)
                             Maximum_Q_values.append(max_q_value)
