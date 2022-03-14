@@ -27,6 +27,7 @@ Q_values = []
 Maximum_Q_values = []
 number_of_timesteps_to_win = []
 number_of_timesteps_to_lose = []
+times_per_simulation = []
 start_point = 0
 
 
@@ -47,9 +48,9 @@ def memory_scan(start_point, batch_size):
                     elif memory[game_iteration][2] == -1000:
                         number_of_timesteps_to_lose.append(counter)
                     counter = 0
-                game_has_ended = True
-
-        return start_point + batch_size
+                    game_has_ended = True
+    return start_point + batch_size
+        #return start_point + batch_size
 def plotting_difference(list1, list2):
     differences = []
     print(list1)
@@ -57,10 +58,12 @@ def plotting_difference(list1, list2):
         diff = list1[i] - list2[i]
         differences.append(diff)
     plt.plot(differences)
-    plt.title('title name')
+    plt.title('Graph showing difference between maximum Q-value \n and Q value of eating a goat')
     plt.xlabel('xAxis name')
     plt.ylabel('yAxis name')
+    plt.savefig('line_plot.pdf')
     plt.show()
+    
     return differences
 
 class DQNAgent:
@@ -143,6 +146,7 @@ for simulation in range(number_of_simulations):
     goat_ai = GOAT_AI(max_number_of_goats_on_the_board)
     avialable_goats = max_number_of_goats_on_the_board
     decision = agent.act_decision()
+    times_per_simulation.append(time.process_time)
     for timestep in range(maximum_number_of_timesteps):
         current_state = np.zeros((board_dimension, board_dimension))
         action = (0, 0)
@@ -184,6 +188,7 @@ for simulation in range(number_of_simulations):
                             max_q_value = np.amax(q_values)
                             Q_values.append(q_value)
                             Maximum_Q_values.append(max_q_value)
+                            break
             done, tiger_reward, eaten_goats = tiger_score_check(tiger_ai, eaten_goats)
             memory.append((current_state, action, tiger_reward, next_state, done, test_probability_matrix))
 
@@ -199,6 +204,7 @@ for simulation in range(number_of_simulations):
                 agent.save("trial-{}.model".format(len(memory)))
                 print("won", number_of_timesteps_to_win)
                 print("lost", number_of_timesteps_to_lose)
+
 plotting_difference(Maximum_Q_values, Q_values)
     
 
