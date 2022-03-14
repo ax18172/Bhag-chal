@@ -15,13 +15,14 @@ import collections
 from collections import deque
 from bag_chal_main import board
 import random
+import time
 from bag_chal_main import GOAT_AI, TIGER_AI, TIGER, tiger_score_check, goat_score_check, memory, \
  \
     max_number_of_goats_on_the_board, goat_move
 
 state_size = np.zeros((3, 3))
 action_size_tiger = 16
-batch_size = 32
+batch_size = 10
 Q_values = []
 Maximum_Q_values = []
 number_of_timesteps_to_win = []
@@ -49,7 +50,18 @@ def memory_scan(start_point, batch_size):
                 game_has_ended = True
 
         return start_point + batch_size
-
+def plotting_difference(list1, list2):
+    differences = []
+    print(list1)
+    for i in range(len(list1)):
+        diff = list1[i] - list2[i]
+        differences.append(diff)
+    plt.plot(differences)
+    plt.title('title name')
+    plt.xlabel('xAxis name')
+    plt.ylabel('yAxis name')
+    plt.show()
+    return differences
 
 class DQNAgent:
     def __init__(self, state_size, action_size):
@@ -112,7 +124,7 @@ class DQNAgent:
 
 
 agent = DQNAgent(state_size, action_size_tiger)
-number_of_simulations = 33
+number_of_simulations = 13
 
 for simulation in range(number_of_simulations):
     print("simulation number: ", simulation, "/",
@@ -140,7 +152,7 @@ for simulation in range(number_of_simulations):
             avialable_goats -= 1
         else:
             board, goats, goat_coord = goat_move(board, goat_ai, goats, "moving", goat_coord)
-        # print("goat is placed\n", board)
+        print("goat is placed\n", board)
         done, tiger_reward = goat_score_check(tiger_ai, board, goat_coord)
         if not done:
             eaten_goats = eaten_goats
@@ -149,15 +161,15 @@ for simulation in range(number_of_simulations):
                                                                                                                      board,
                                                                                                                      goat_coord,
                                                                                                                      goats)
-                # print("random tiger moved\n", board)
+                #print("random tiger moved\n", board)
             elif decision == "neural network":
                 current_state = board.copy()
                 q_values = agent.target_model.predict(np.reshape(current_state, (1, 9)))
-                # print("Q-values:\n", q_values)
+                print("Q-values:\n", q_values)
                 current_state, next_state, goat_coord, goats, action, test_probability_matrix = tiger_ai.make_a_move(
                     q_values, board, goat_coord,
                     goats)
-                # print("neural tiger moved\n", board)
+                print("neural tiger moved\n", board)
                 if np.amax(test_probability_matrix) > 1:
                     test_probability_matrix = np.reshape(test_probability_matrix, (1, 9))
                     for probability in test_probability_matrix[0]:
@@ -187,10 +199,7 @@ for simulation in range(number_of_simulations):
                 agent.save("trial-{}.model".format(len(memory)))
                 print("won", number_of_timesteps_to_win)
                 print("lost", number_of_timesteps_to_lose)
+plotting_difference(Maximum_Q_values, Q_values)
+    
 
 
-def plotting_difference(list1, list2):
-    differences = []
-    for i in range(len(list1)):
-        diff = list1[i] - list2[i]
-    return differences
