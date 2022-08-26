@@ -65,7 +65,6 @@ def move(pos_x, pos_y, dx, dy, mission, animal, board):
             elif animal == "goat":
                 board[pos_x, pos_y] = 2
             move_is_made = True
-    # print("first stage", move_is_made)
     return pos_x, pos_y, move_is_made
 
 
@@ -113,7 +112,6 @@ class TIGER:
         return probability_matrix, test_probability_matrix
 
 
-"""Goat class is identical to tiger in lots of aspects, just simpler"""
 
 
 class GOAT:
@@ -177,7 +175,6 @@ class TIGER_AI():
                     probability_matrix_tiger[probability_index] = 0
             probability_matrix_tiger = np.reshape(probability_matrix_tiger, (3, 3))
             probability_matrix_tiger = np.multiply(q_values, probability_matrix_tiger)
-            # print("neural probability matrix\n", probability_matrix_tiger)
         highest_value = np.max(probability_matrix_tiger[np.nonzero(probability_matrix_tiger)])
         index_x, index_y = np.where(probability_matrix_tiger == highest_value)
         dx, dy = index_x[0] - self.Tiger.return_position()[0], index_y[0] - self.Tiger.return_position()[1]
