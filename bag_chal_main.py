@@ -1,22 +1,13 @@
 import numpy as np
 import random
-from collections import deque
-import math
 
 possible_moves = [(0, 1), (1, 0), (0, -1), (-1, 0), (1, 1), (1, -1), (-1, 1), (-1, -1), (0, 2), (2, 0), (0, -2),
                   (-2, 0), (2, 2), (2, -2),
                   (-2, 2), (-2, -2)]
 
-"""list of all available moves"""
 grid_matrix = [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2], [2, 0], [2, 1], [2, 2]]
-"""places that are currently holding a tiger or a sheep"""
-"""lists of goats and their respective coordinates"""
-# board = np.zeros((3, 3))
-# goats = []
-# goat_coord = []
 max_number_of_goats_on_the_board = 7
 goats_to_win_the_game = 2
-# eaten_goats = 0
 memory = []
 
 
@@ -112,8 +103,6 @@ class TIGER:
         return probability_matrix, test_probability_matrix
 
 
-
-
 class GOAT:
     def __init__(self, init_x, init_y, board):
         self.pos_x = init_x
@@ -131,19 +120,6 @@ class GOAT:
     def move_goat(self, dx, dy, board):
         self.pos_x, self.pos_y, move_is_made = move(self.pos_x, self.pos_y, dx, dy, "move", "goat", board)
         return self.pos_x, self.pos_y
-
-
-def placing_the_goat(board):
-    placement_matrix = np.zeros((3, 3))
-    for i in range(0, 2):
-        for j in range(0, 2):
-            if board[i, j] == 0:
-                placement_matrix[i, j] = random.random()
-            else:
-                placement_matrix[i, j] = 0
-    highest_value = np.amax(placement_matrix)
-    index_x, index_y = np.where(placement_matrix == highest_value)
-    return index_x[0], index_y[0]
 
 
 class TIGER_AI():
@@ -198,127 +174,162 @@ class TIGER_AI():
         return self.Tiger.probabilities_matrix(board, goat_coord)
 
 
-class GOAT_AI:
-    def __init__(self, max_number_of_goats):
-        self.max_number_of_goats = max_number_of_goats
-        self.number_of_goats_on_the_board = 0
-
-    def where_to_place_a_goat(self, index_x_nn, index_y_nn, neural_network_inputs, board):
-        if neural_network_inputs:
-            index_x, index_y = index_x_nn, index_y_nn
-        else:
-            placement_matrix = np.zeros((3, 3))
-            for i in range(0, 3):
-                for j in range(0, 3):
-                    if board[i, j] == 0:
-                        placement_matrix[i, j] = random.random()
-                    else:
-                        placement_matrix[i, j] = 0
-            highest_value = np.amax(placement_matrix)
-            index_x, index_y = np.where(placement_matrix == highest_value)
-            index_x, index_y = index_x[0], index_y[0]
-        return index_x, index_y
-
-    def placing_a_goat(self, board, goat_coord, goats):
-        goat_x, goat_y = self.where_to_place_a_goat(None, None, False, board)
-        goat = GOAT(goat_x, goat_y, board)
-        goat_coord.append(goat.return_position())
-        goats.append(goat)
-        self.number_of_goats_on_the_board += 1
-
-    def picking_a_goat_to_move(self, board, goats, goat_coord):
-        location_matrix = np.zeros((3, 3))
-        for i in range(0, 3):
-            for j in range(0, 3):
-                if board[i, j] == 2:
-                    goat = goats[goat_coord.index((i, j))]
-                    movement_matrix = goat.probabilities_matrix(board)
-                    # print("mm", movement_matrix)
-                    test_matrix = np.zeros((3, 3))
-                    test_matrix[i, j] = -1
-                    if np.all(movement_matrix == test_matrix):
-                        location_matrix[i, j] = 0
-                    else:
-                        location_matrix[i, j] = random.random()
-        # print("lm", location_matrix)
-        highest_value = np.amax(location_matrix)
-        index_x, index_y = np.where(location_matrix == highest_value)
-        goat = goats[goat_coord.index((index_x[0], index_y[0]))]
-        return goat
-
-    def make_a_move(self, goat, board, goat_coord):
-        possible_moves = goat.probabilities_matrix(board)
-        # print("actual mm", possible_moves)
-        highest_value = np.amax(possible_moves)
-        index_x, index_y = np.where(possible_moves == highest_value)
-        # print("where it should go", (index_x, index_y))
-        position_in_list = goat_coord.index((goat.return_position()[0], goat.return_position()[1]))
-        goat_coord[position_in_list] = (index_x[0], index_y[0])
-        dx, dy = index_x[0] - goat.return_position()[0], index_y[0] - goat.return_position()[1]
-        goat.move_goat(dx, dy, board)
-        return dx, dy
-
-
-def tiger_score_check(tiger_ai, eaten_goats):
-    newly_eaten_goats = tiger_ai.return_killed_goats()
-    tiger_reward = 0
-    if newly_eaten_goats != eaten_goats:
-        tiger_reward = 100
-        eaten_goats = newly_eaten_goats
-    else:
-        tiger_reward = -10
-    if eaten_goats >= goats_to_win_the_game:
-        tiger_reward = 1000
-        return True, tiger_reward, eaten_goats
-    else:
-        return False, tiger_reward, eaten_goats
-
-
-def goat_score_check(tiger_ai, board, goat_coord):
-    tiger_reward = 0
-    movement_matrix = tiger_ai.return_tiger_probability_matrix(board, goat_coord)
-    index_x, index_y = tiger_ai.return_tiger_position()
-    test_matrix = np.zeros((3, 3))
-    test_matrix[index_x, index_y] = -1
-    if np.all(movement_matrix == test_matrix):
-        tiger_reward = -1000
-        return True, tiger_reward
-    else:
-        return False, tiger_reward
-
-
-def goat_move(board, goat_ai, goats, type_of_act, goat_coord):
+"""def goat_move(board, goat_ai, goats, type_of_act, goat_coord):
     if type_of_act == "placing":
         goat_ai.placing_a_goat(board, goat_coord, goats)
     elif type_of_act == "moving":
         goat = goat_ai.picking_a_goat_to_move(board, goats, goat_coord)
         goat_ai.make_a_move(goat, board, goat_coord)
-    return board, goats, goat_coord
+    return board, goats, goat_coord"""
 
 
-board = np.zeros((3, 3))
-tiger = TIGER(2, 2, board)
-tiger_ai = TIGER_AI(tiger)
-goat_ai = GOAT_AI(max_number_of_goats_on_the_board)
-episodes = 20
-avialable_goats = 7
-goat_coord = []
-goats = []
-eaten_goats = 0
-for episode in range(episodes):
-    if avialable_goats > 0:
-        board, goats, goat_coord = goat_move(board, goat_ai, goats, "placing", goat_coord)
-        avialable_goats -= 1
+class GOAT_AI:
+    def __init__(self, board_dimension):
+        self.board_dimension = board_dimension
+
+    def picking_a_goat_to_move(self, goats, goat_coord, input):
+        index_x, index_y = input[0], input[1]
+        goat = goats[goat_coord.index((index_x, index_y))]
+        return goat
+
+    def make_a_move(self, goat, board, goat_coord, input):
+        index_x, index_y = input[0], input[1]
+        position_in_list = goat_coord.index((goat.return_position()[0], goat.return_position()[1]))
+        goat_coord[position_in_list] = (index_x[0], index_y[0])
+        dx, dy = index_x[0] - goat.return_position()[0], index_y[0] - goat.return_position()[1]
+        goat.move_goat(dx, dy, board)
+
+    def pd_ai(self, probabilities, board, available_goats,goat_coord,goats):
+        if available_goats > 0:
+            placement_options = probabilities[:self.board_dimension ** 2]
+            placement_options = np.reshape(placement_options, (self.board_dimension, self.board_dimension))
+            for i in range(0, self.board_dimension):
+                for j in range(0, self.board_dimension):
+                    if board[i, j] != 0:
+                        placement_options[i, j] = 0
+            max_value = np.amax(placement_options)
+            goat_x, goat_y = np.where(placement_options == max_value)
+            goat = GOAT(goat_x[0], goat_y[0], board)
+            goat_coord.append(goat.return_position())
+            goats.append(goat)
+            available_goats -= 1
+        else:
+            goat_options = probabilities[self.board_dimension ** 2:]
+            goat_options = np.reshape(goat_options,
+                                      (self.board_dimension ** 2, self.board_dimension ** 2))
+            auxiliary_matrix = np.reshape(goat_options[0, :], (self.board_dimension, self.board_dimension))
+            for i in range(0, self.board_dimension):
+                for j in range(0, self.board_dimension):
+                    if board[i, j] != 2:
+                        auxiliary_matrix[i, j] = 0
+                    else:
+                        goat = goats[goat_coord.index((i, j))]
+                        movement_matrix = goat.probabilities_matrix(board)
+                        test_matrix = np.zeros((self.board_dimension, self.board_dimension))
+                        test_matrix[i, j] = -1
+                        if np.all(movement_matrix == test_matrix):
+                            auxiliary_matrix[i, j] = 0
+            goat_options[0, :] = np.reshape(auxiliary_matrix, (1, self.board_dimension ** 2))
+            for index in range(goat_options.shape[0]):
+                if goat_options[0, index] == 0:
+                    goat_options[:, index] = np.zeros((self.board_dimension ** 2))
+                else:
+                    auxiliary_value = goat_options[0, index]
+                    goat_index_x, goat_index_y = np.where(auxiliary_matrix == auxiliary_value)
+                    goat = self.picking_a_goat_to_move(goats, goat_coord, [goat_index_x, goat_index_y])
+                    movement_options = np.reshape(goat_options[:, index], (self.board_dimension, self.board_dimension))
+                    movement_matrix = goat.probabilities_matrix(board)
+                    for i in range(0, self.board_dimension):
+                        for j in range(0, self.board_dimension):
+                            if movement_matrix[i, j] != 0 and movement_matrix[i, j] != -1:
+                                movement_matrix[i, j] = 1
+                            else:
+                                movement_matrix[i, j] = 0
+                    movement_options = np.multiply(movement_options, movement_matrix)
+                    goat_options[:, index] = np.reshape(movement_options, ((self.board_dimension ** 2)))
+            max_value = np.amax(goat_options)
+            pos_x, pos_y = np.where(goat_options == max_value)
+            pos_x, pos_y = pos_x[0], pos_y[0]
+            auxiliary_matrix = np.reshape(goat_options[pos_x, :], (self.board_dimension, self.board_dimension))
+            goat_index_x, goat_index_y = np.where(auxiliary_matrix == max_value)
+            goat = self.picking_a_goat_to_move(goats, goat_coord, [goat_index_x, goat_index_y])
+            movement_options = np.reshape(goat_options[:, pos_y], (self.board_dimension, self.board_dimension))
+            new_pos_x, new_pos_y = np.where(movement_options == max_value)
+            self.make_a_move(goat, board, goat_coord, [new_pos_x, new_pos_y])
+        index= np.where(probabilities == max_value)
+        return board, index, available_goats,goat_coord,goats
+
+
+def tiger_score_check(tiger_ai, eaten_goats):
+    newly_eaten_goats = tiger_ai.return_killed_goats()
+    if newly_eaten_goats != eaten_goats:
+        tiger_reward = 1
+        eaten_goats = newly_eaten_goats
+        goat_reward = -5
     else:
-        board, goats, goat_coord = goat_move(board, goat_ai, goats, "moving", goat_coord)
-    done, tiger_reward = goat_score_check(tiger_ai, board, goat_coord)
-    if not done:
-        current_state, next_state, goat_coord, goats, action, test_probability_matrix = tiger_ai.make_a_move([], board,
-                                                                                                             goat_coord,
-                                                                                                             goats)
-        done, tiger_reward, eaten_goats = tiger_score_check(tiger_ai, eaten_goats)
-        memory.append((current_state, action, tiger_reward, next_state, done, test_probability_matrix))
+        tiger_reward = 0
+        goat_reward = 0
+    if eaten_goats >= goats_to_win_the_game:
+        tiger_reward = 10
+        goat_reward = -10
+        return True, tiger_reward, eaten_goats, goat_reward
     else:
-        break
-    if memory[-1][-2]:
-        break
+        return False, tiger_reward, eaten_goats, goat_reward
+
+
+def goat_score_check(tiger_ai, board, goat_coord):
+    tiger_reward = 0
+    goat_reward = 0
+    movement_matrix = tiger_ai.return_tiger_probability_matrix(board, goat_coord)
+    index_x, index_y = tiger_ai.return_tiger_position()
+    test_matrix = np.zeros((3, 3))
+    test_matrix[index_x, index_y] = -1
+    if np.all(movement_matrix == test_matrix):
+        tiger_reward = -10
+        goat_reward = 10
+        return True, tiger_reward, goat_reward
+    else:
+        return False, tiger_reward, goat_reward
+
+
+def run_episode(board_dimension, max_number_of_goats, tiger_initial_pos, maximum_number_of_timesteps, agent):
+    board = np.zeros((board_dimension, board_dimension))
+    tiger = TIGER(tiger_initial_pos[0], tiger_initial_pos[1], board)
+    tiger_ai = TIGER_AI(tiger)
+    goat_coord = []
+    goats = []
+    eaten_goats = 0
+    available_goats = max_number_of_goats
+    goat_ai = GOAT_AI(board_dimension)
+    for timestep in range(maximum_number_of_timesteps+1):
+        probabilities = agent.choose_action(board)
+        board, index, available_goats,goat_coord,goats = goat_ai.pd_ai(probabilities, board, available_goats,goat_coord,goats)
+        print("goats moved\n", board)
+        action_goat = np.zeros((1,board_dimension ** 4+board_dimension**2))
+        action_goat[0, index] = 1
+        done, tiger_reward, goat_reward_1 = goat_score_check(tiger_ai, board, goat_coord)
+        if not done:
+            eaten_goats = eaten_goats
+            current_state, next_state, goat_coord, goats, action, test_probability_matrix = tiger_ai.make_a_move([],
+                                                                                                                 board,
+                                                                                                                 goat_coord,
+                                                                                                                 goats)
+            done, tiger_reward, eaten_goats, goat_reward_2 = tiger_score_check(tiger_ai, eaten_goats)
+            goat_reward = goat_reward_1 + goat_reward_2
+            print("random tiger moved\n", board)
+        else:
+            goat_reward = goat_reward_1
+            state = board.copy()
+            agent.store_transition(np.reshape(state, (1, board_dimension ** 2)), action_goat, goat_reward)
+            break
+        state = board.copy()
+        agent.store_transition(np.reshape(state,(1,board_dimension**2)),action_goat,goat_reward)
+        if done:
+            break
+
+
+
+
+
+
+
