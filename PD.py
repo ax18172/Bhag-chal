@@ -35,6 +35,8 @@ class Agent():
         model.add(Dense(45, activation="relu"))
         model.add(Dense(90, activation="relu"))
         model.add(Dense(180, activation="relu"))
+        model.add(Dense(360, activation="relu"))
+        model.add(Dense(180, activation="relu"))
         model.add(Dense(self.action_size, activation="softmax"))
 
         def custom_loss(y_true, y_pred):
