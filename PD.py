@@ -82,5 +82,8 @@ class Agent():
 agent = Agent(3, 90)
 number_of_episodes = 10000
 for episode in range(number_of_episodes):
-    run_episode(3, 7, (2, 2), 40, agent)
+    if episode % 100 == 0:
+        run_episode(3, 7, (2, 2), 40, agent,True)
+    else:
+        run_episode(3, 7, (2, 2), 40, agent, False)
     agent.learn()
